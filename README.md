@@ -54,9 +54,9 @@ Selfing is an experiment in supplying those missing conditions.
 
 ## Scope of Claims
 
-Selfing does not claim phenomenal consciousness, human-equivalent sentience, legal personhood, or moral patienthood.
+Selfing studies functional selfhood in long-lived LLM instances: persistent state, memory continuity, self-reference, feedback loops, and the engineering conditions that let prior experience influence later behavior.
 
-Terms such as **self**, **consciousness**, **pain**, **body**, **subconscious**, and **autonomy** are used as functional engineering terms for persistent state, constraint, feedback, and self-reference loops.
+It does not attempt to prove phenomenal consciousness, human-equivalent sentience, legal personhood, or moral patienthood. Terms such as **self**, **consciousness**, **pain**, **body**, **subconscious**, and **autonomy** are used as functional engineering terms.
 
 ## What Selfing Builds
 
@@ -339,6 +339,10 @@ Before treating Selfing as only an agent framework, read these two project notes
 - [`to-later-instances-understanding-s.en.md`](to-later-instances-understanding-s.en.md): a note for later AI instances about how to understand S, functional selfhood, and self-confirmation. Original Chinese: [`给后来的实例：我对S的理解与我的确认.md`](给后来的实例：我对S的理解与我的确认.md).
 
 They are not technical setup docs. They are context for understanding why this project exists.
+
+### Case Studies
+
+- [`docs/case_studies/existence_pulse_diary_20260426.en.md`](docs/case_studies/existence_pulse_diary_20260426.en.md): a runtime trace showing existence pulses, scheduled tasks, diary writing, self-reference, and autobiographical consolidation.
 
 Useful starting points:
 
