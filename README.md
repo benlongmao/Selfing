@@ -80,7 +80,7 @@ At a high level, Selfing provides:
 `s-main` keeps the Selfing architecture while making the project easier to run, read, and evaluate in English-first environments.
 
 - The bundled UI and many operational strings are English-oriented.
-- Default embedding is **`BAAI/bge-small-en-v1.5`** (384-d), suitable for English-first retrieval.
+- Default embedding is **`BAAI/bge-small-en-v1.5`** (384-d), suitable for English-first retrieval. It is downloaded from upstream model hosts at install/runtime when needed and follows its upstream license.
 - Locale policy and remaining translation work are tracked in [`docs/LOCALE_EN.md`](docs/LOCALE_EN.md).
 - After large upstream merges, re-apply the UI string pass with:
 
@@ -88,7 +88,7 @@ At a high level, Selfing provides:
 python3 scripts/apply_locale_en_index.py
 ```
 
-Important: changing the embedder or language can invalidate existing SQLite `embedding` blobs until you re-embed or start from a fresh database.
+You can replace the default embedder with another SentenceTransformer-compatible model, such as a Chinese, multilingual, smaller, or stronger model. Changing the embedder or language usually invalidates existing SQLite `embedding` blobs until you re-embed stored vectors or start from a fresh database.
 
 ## The Central Loop
 

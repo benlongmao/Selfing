@@ -59,12 +59,8 @@ Thumbs.db
 # Node modules
 node_modules/
 
-# Models (large files)
-models/AI-ModelScope/
-models/*.bin
-models/*.safetensors
-models/*.onnx
-models/*.npy
+# Models (downloaded runtime cache)
+models/
 
 # Data files
 data/
