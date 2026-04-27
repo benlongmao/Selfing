@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soul Mirror — evolution trajectory</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 20px 40px;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        input, button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        main {
+            padding: 32px 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            flex: 1;
+            min-height: 400px;
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Loading Overlay */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--accent-blue);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--card-bg);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading">
+    <div class="spinner"></div>
+</div>
+
+<header>
+    <h1>🪞 Soul Mirror <span style="font-size: 14px; opacity: 0.7; font-weight: normal;">v2.0</span></h1>
+    <div class="controls">
+        <input type="text" id="session-id" value="selfing-session" placeholder="Session ID">
+        <button id="refresh-btn">🔄 Refresh</button>
+        <button id="sleep-btn" style="background: var(--accent-purple); border-color: var(--accent-purple);">🛌 Force sleep</button>
+        <a href="index.html" style="color: var(--accent-blue); text-decoration: none; font-size: 14px;">← Back to console</a>
+    </div>
+</header>
+
+<main>
+    <!-- 1. Five-dimension radar chart -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <span>📊</span> Soul Shape
+            </div>
+            <select id="tick-select" style="padding: 4px; font-size: 12px;">
+                <!-- JS populated -->
+            </select>
+        </div>
+        <div id="radar-chart" class="chart-container"></div>
+    </div>
+
+    <!-- 2. Live vital signs -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <span>💓</span> Vital Signs
+            </div>
+        </div>
+        <div class="stat-grid">
+            <div class="stat-item">
+                <div class="stat-label">Drift</div>
+                <div class="stat-value" id="stat-drift" style="color: var(--accent-green)">0.00%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Entropy</div>
+                <div class="stat-value" id="stat-entropy" style="color: var(--accent-purple)">0.00</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Energy</div>
+                <div class="stat-value" id="stat-energy" style="color: var(--accent-blue)">100%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Emotion (dominant)</div>
+                <div class="stat-value" id="stat-emotion">Neutral</div>
+            </div>
+        </div>
+        <div id="emotion-pie-chart" class="chart-container" style="min-height: 280px;"></div>
+    </div>
+
+    <!-- 3. Evolution trajectory (time series) -->
+    <div class="card full-width">
+        <div class="card-header">
+            <div class="card-title">
+                <span>📈</span> Evolutionary trajectory
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+                z_self slice intensities over time across dimensions
+            </div>
+        </div>
+        <div id="trajectory-chart" class="chart-container" style="min-height: 500px;"></div>
+    </div>
+
+    <!-- 4. Latent projection (PCA / t-SNE) — reserved / WIP -->
+    <div class="card full-width">
+         <div class="card-header">
+            <div class="card-title">
+                <span>🌌</span> Latent space projection
+            </div>
+             <div class="controls">
+                 <button id="pca-btn" style="padding: 4px 8px; font-size: 12px;">PCA</button>
+                 <button id="tsne-btn" style="padding: 4px 8px; font-size: 12px; background: var(--card-bg); border: 1px solid var(--text-secondary);">t-SNE</button>
+             </div>
+        </div>
+        <div id="projection-chart" class="chart-container" style="min-height: 600px;"></div>
+    </div>
+</main>
+
+<script>
+    // --- Configuration ---
+    const API_BASE = window.location.origin;
+    let chartInstances = {};
+    
+    // ECharts Theme
+    const themeColor = {
+        textColor: '#f1f5f9',
+        axisColor: '#475569',
+        splitLine: 'rgba(255, 255, 255, 0.05)',
+        tooltipBg: 'rgba(30, 41, 59, 0.9)',
+        series: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
+    };
+
+    // --- ECharts Initialization ---
+    function initCharts() {
+        chartInstances.radar = echarts.init(document.getElementById('radar-chart'));
+        chartInstances.pie = echarts.init(document.getElementById('emotion-pie-chart'));
+        chartInstances.trajectory = echarts.init(document.getElementById('trajectory-chart'));
+        chartInstances.projection = echarts.init(document.getElementById('projection-chart'));
+        
+        window.addEventListener('resize', () => {
+            Object.values(chartInstances).forEach(chart => chart.resize());
+        });
+    }
+
+    // --- Data Fetching ---
+    async function fetchData(sessionId) {
+        showLoading(true);
+        try {
+            // 1. Trajectory history
+            const trajResp = await fetch(`${API_BASE}/self/trajectory?sessionId=${sessionId}&limit=50`);
+            const trajectoryData = await trajResp.json();
+
+            // 2. Current state summary
+            const summaryResp = await fetch(`${API_BASE}/self/summary?sessionId=${sessionId}`);
+            const summaryData = await summaryResp.json();
+            
+            updateUI(trajectoryData, summaryData);
+        } catch (err) {
+            console.error("Fetch failed:", err);
+            alert("Failed to load data. Check the console for details.");
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // --- UI Updating ---
+    function updateUI(trajData, summaryData) {
+        const history = trajData.history || []; // array of {tick, z_self, ...}
+        if (history.length === 0) return;
+
+        // Sort by tick
+        history.sort((a, b) => a.tick - b.tick);
+        const latest = history[history.length - 1];
+        
+        // Update Stats
+        updateStats(latest, summaryData);
+
+        // Update Tick Select
+        updateTickSelect(history);
+
+        // Render Charts
+        renderRadar(latest);
+        renderTrajectory(history);
+        renderProjection(history); // Simplified 2D view of 80D
+        
+        // Update Pie (Mock data if not available detail)
+        renderPie(latest);
+    }
+
+    function updateStats(latest, summary) {
+        // Mock calculation for Drift (Euclidean distance from origin/prev) if not provided
+        // Assuming z_self is array
+        const z = JSON.parse(latest.z_self_vector || "[]");
+        
+        // Entropy mock: variance of vector
+        const mean = z.reduce((a,b)=>a+b,0)/z.length;
+        const variance = z.reduce((a,b)=>a+pow(b-mean,2),0)/z.length;
+        
+        document.getElementById('stat-drift').innerText = "0.12%"; // Mock for now
+        document.getElementById('stat-entropy').innerText = variance.toFixed(4);
+        document.getElementById('stat-emotion').innerText = latest.dominant_emotion || "Neutral";
+        
+        if (summary && summary.energy) {
+             document.getElementById('stat-energy').innerText = summary.energy.toFixed(1) + "%";
+        }
+    }
+    
+    function pow(a, b) { return Math.pow(a, b); }
+
+    function updateTickSelect(history) {
+        const select = document.getElementById('tick-select');
+        select.innerHTML = '';
+        history.forEach((item, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.text = `Tick #${item.tick} (${new Date(item.timestamp).toLocaleTimeString()})`;
+            if (idx === history.length - 1) opt.selected = true;
+            select.appendChild(opt);
+        });
+        
+        select.onchange = (e) => {
+            const item = history[e.target.value];
+            renderRadar(item);
+            renderPie(item);
+        };
+    }
+
+    // --- Chart Rendering Logic ---
+
+    function renderRadar(item) {
+        const z = JSON.parse(item.z_self_vector || "[]");
+        if (z.length < 80) return; // Ensure 80 dims
+
+        // Aggregate sub-dimensions
+        // Rules(0-32), Emotion(32-48), Motivation(48-64), Somatic(64-72), World(72-80)
+        
+        // Helper to avg absolute values
+        const avgAbs = (start, end) => {
+            let sum = 0;
+            for(let i=start; i<end; i++) sum += Math.abs(z[i] || 0);
+            return (sum / (end - start)).toFixed(2);
+        };
+
+        const scores = [
+            avgAbs(0, 32),  // Rules (Logic)
+            avgAbs(32, 48), // Emotion
+            avgAbs(48, 64), // Motivation
+            avgAbs(64, 72), // Somatic
+            avgAbs(72, 80)  // Worldview
+        ];
+
+        const option = {
+            backgroundColor: 'transparent',
+            radar: {
+                indicator: [
+                    { name: 'Logic', max: 1.5 },
+                    { name: 'Emotion', max: 1.5 },
+                    { name: 'Drive', max: 1.5 },
+                    { name: 'Soma', max: 1.5 },
+                    { name: 'World', max: 1.5 }
+                ],
+                shape: 'circle',
+                splitNumber: 4,
+                axisName: { color: themeColor.textColor },
+                splitLine: { lineStyle: { color: themeColor.splitLine } },
+                splitArea: { show: false },
+                axisLine: { lineStyle: { color: themeColor.axisColor } }
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: scores,
+                    name: `Tick #${item.tick}`,
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(59, 130, 246, 0.5)'}, {offset: 1, color: 'rgba(59, 130, 246, 0.1)'}]) },
+                    lineStyle: { color: '#60a5fa', width: 2 },
+                    itemStyle: { color: '#60a5fa' }
+                }]
+            }]
+        };
+        chartInstances.radar.setOption(option);
+    }
+
+    function renderPie(item) {
+        // Mock: visualize breakdown of 5 dimensions as percentage of total "activation"
+         const z = JSON.parse(item.z_self_vector || "[]");
+         const avgAbs = (start, end) => {
+            let sum = 0;
+            for(let i=start; i<end; i++) sum += Math.abs(z[i] || 0);
+            return sum; // Total energy
+        };
+        
+        const data = [
+            { value: avgAbs(0, 32), name: 'Rules' },
+            { value: avgAbs(32, 48), name: 'Emotion' },
+            { value: avgAbs(48, 64), name: 'Motivation' },
+            { value: avgAbs(64, 72), name: 'Somatic' },
+            { value: avgAbs(72, 80), name: 'Worldview' }
+        ];
+
+        const option = {
+             backgroundColor: 'transparent',
+             tooltip: { trigger: 'item', backgroundColor: themeColor.tooltipBg, textStyle: { color: '#fff' } },
+             series: [{
+                 type: 'pie',
+                 radius: ['40%', '70%'],
+                 avoidLabelOverlap: false,
+                 itemStyle: { borderRadius: 5, borderColor: '#1e293b', borderWidth: 2 },
+                 label: { show: false },
+                 emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#fff' } },
+                 data: data
+             }]
+        };
+        chartInstances.pie.setOption(option);
+    }
+
+    function renderTrajectory(history) {
+        const ticks = history.map(h => `T${h.tick}`);
+        
+        // Extract dimension averages over time
+        const seriesData = {
+            rules: [], emotion: [], motivation: [], somatic: [], world: []
+        };
+
+        history.forEach(h => {
+            const z = JSON.parse(h.z_self_vector || "[]");
+             const avg = (start, end) => {
+                let sum = 0;
+                for(let i=start; i<end; i++) sum += z[i] || 0; // Use actual value (signed) to show polarity shift
+                return (sum / (end - start)).toFixed(3);
+            };
+            seriesData.rules.push(avg(0, 32));
+            seriesData.emotion.push(avg(32, 48));
+            seriesData.motivation.push(avg(48, 64));
+            seriesData.somatic.push(avg(64, 72));
+            seriesData.world.push(avg(72, 80));
+        });
+
+        const option = {
+            backgroundColor: 'transparent',
+            tooltip: { trigger: 'axis', backgroundColor: themeColor.tooltipBg, textStyle: { color: '#fff' } },
+            legend: { data: ['Rules', 'Emotion', 'Motivation', 'Somatic', 'World'], textStyle: { color: themeColor.textSecondary }, bottom: 0 },
+            grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+            xAxis: { type: 'category', boundaryGap: false, data: ticks, axisLine: { lineStyle: { color: themeColor.axisColor } } },
+            yAxis: { type: 'value', splitLine: { lineStyle: { color: themeColor.splitLine } }, axisLabel: { color: themeColor.textSecondary } },
+            series: [
+                { name: 'Rules', type: 'line', smooth: true, data: seriesData.rules, lineStyle: { width: 1 } },
+                { name: 'Emotion', type: 'line', smooth: true, data: seriesData.emotion, lineStyle: { width: 2 } },
+                { name: 'Motivation', type: 'line', smooth: true, data: seriesData.motivation, lineStyle: { width: 2 } },
+                { name: 'Somatic', type: 'line', smooth: true, data: seriesData.somatic, lineStyle: { width: 2, type: 'dashed' } },
+                { name: 'World', type: 'line', smooth: true, data: seriesData.world, lineStyle: { width: 2, type: 'dotted' } }
+            ]
+        };
+        chartInstances.trajectory.setOption(option);
+    }
+
+    function renderProjection(history) {
+        // Mock PCA Projection: Map 80D -> 2D
+        // Since we don't have PCA lib in browser, we'll use 2 fixed random projections just for visualization effect
+        // In production, perform PCA on backend and send [x, y] coords
+        
+        const data = history.map(h => {
+            const z = JSON.parse(h.z_self_vector || "[]");
+            // Simple pseudo-projection
+            const x = z.slice(0, 40).reduce((a,b) => a+b, 0);
+            const y = z.slice(40, 80).reduce((a,b) => a+b, 0);
+            return [x, y, h.tick, h.dominant_emotion];
+        });
+
+        const option = {
+            backgroundColor: 'transparent',
+             tooltip: { 
+                 formatter: (params) => {
+                     return `Tick: ${params.value[2]}<br/>Emotion: ${params.value[3]}`;
+                 },
+                 backgroundColor: themeColor.tooltipBg, 
+                 textStyle: { color: '#fff' }
+            },
+            xAxis: { splitLine: { lineStyle: { color: themeColor.splitLine } }, axisLine: { lineStyle: { color: themeColor.axisColor } } },
+            yAxis: { splitLine: { lineStyle: { color: themeColor.splitLine } }, axisLine: { lineStyle: { color: themeColor.axisColor } } },
+            series: [{
+                symbolSize: 10,
+                data: data,
+                type: 'scatter',
+                itemStyle: {
+                    color: (params) => {
+                        // Color by dominant emotion label (English or legacy Chinese API strings)
+                        const emo = params.value[3] || "";
+                        if(emo.includes("joy") || emo.includes("快乐")) return '#10b981';
+                        if(emo.includes("sad") || emo.includes("悲伤")) return '#64748b';
+                        if(emo.includes("anger") || emo.includes("愤怒")) return '#ef4444';
+                        return '#3b82f6';
+                    },
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(255,255,255,0.2)'
+                }
+            }]
+        };
+        chartInstances.projection.setOption(option);
+    }
+
+    function showLoading(show) {
+        document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+
+    // --- Init ---
+    window.onload = () => {
+        initCharts();
+        
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            const sid = document.getElementById('session-id').value;
+            fetchData(sid);
+        });
+
+        document.getElementById('sleep-btn').addEventListener('click', async () => {
+            const sid = document.getElementById('session-id').value;
+            if(!confirm("Put the AI into deep sleep?\nThis prunes weak memories and restores energy.")) return;
+            
+            const btn = document.getElementById('sleep-btn');
+            btn.disabled = true;
+            btn.innerText = "💤 Sleeping...";
+            
+            try {
+                const resp = await fetch(`${API_BASE}/self/sleep`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sessionId: sid })
+                });
+                const data = await resp.json();
+                if(data.ok) {
+                    alert(`✨ Sleep complete.\nEnergy restored.\nMetabolism: merged ${data.metabolism.consolidated}, pruned ${data.metabolism.excreted}.`);
+                    fetchData(sid); // Refresh UI
+                } else {
+                    alert("Sleep failed: " + JSON.stringify(data));
+                }
+            } catch(e) {
+                alert("Request error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "🛌 Force sleep";
+            }
+        });
+
+        // Auto load
+        fetchData(document.getElementById('session-id').value);
+    };
+
+</script>
+</body>
+</html>
+

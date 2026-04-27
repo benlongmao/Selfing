@@ -1,0 +1,2397 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Persona Self-Aware Console</title>
+  <!-- [2026-03-18] Sync agent_name from config.js before async fetch -->
+  <script src="/api/config.js"></script>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    html {
+      overflow-x: hidden;
+    }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      margin: 0;
+      background: var(--page-bg, #f5f7fb);
+      color: var(--text-color, #1f2328);
+      overflow-x: hidden;
+    }
+    header {
+      background: linear-gradient(135deg, #3744ff, #6e8bff);
+      color: #fff;
+      padding: 24px 32px;
+      box-shadow: 0 2px 10px rgba(23, 34, 69, 0.25);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+    main {
+      max-width: 1200px;
+      margin: 24px auto 48px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      gap: 24px;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    section {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(10px);
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    section h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    section h2 span {
+      display: inline-flex;
+      width: 8px;
+      height: 24px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #536dfe, #5ce1e6);
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 10px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.85);
+      color: inherit;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    button {
+      align-self: flex-start;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4c6ef5, #8f9bff);
+      color: #fff;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    button:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(79, 70, 229, 0.3);
+    }
+    button[disabled] {
+      opacity: 0.6;
+      cursor: wait;
+    }
+    .secondary-btn {
+      background: linear-gradient(135deg, #34c9eb, #5af2d6);
+      color: #0b2436;
+    }
+    .danger-btn {
+      background: linear-gradient(135deg, #f87171, #fbb6b6);
+      color: #471515;
+    }
+    .chat-history {
+      background: #0f172a;
+      color: #f8fbff;
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 420px;
+      min-height: 100px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .chat-message {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      max-width: 100%;
+      white-space: pre-wrap;
+    }
+    .chat-message.user {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(96, 165, 250, 0.45);
+    }
+    .chat-message.assistant {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(110, 231, 183, 0.4);
+    }
+    .meta-panel {
+      display: grid;
+      gap: 16px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    .stat-card {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .stat-card strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: rgba(15, 23, 42, 0.75);
+    }
+    .panel-body {
+      background: rgba(248, 250, 255, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 260px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .panel-body code {
+      font-family: ui-monospace, SFMono-Regular, SFMono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+    }
+    .label-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .inline-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .inline-controls > * {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .inline-controls button,
+    .inline-controls .secondary-btn,
+    .inline-controls .danger-btn {
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      white-space: normal;
+      text-align: center;
+    }
+    .status {
+      font-size: 13px;
+      color: rgba(30, 64, 175, 0.85);
+      margin-top: 8px;
+    }
+    .status.error {
+      color: #d14343;
+    }
+    footer {
+      max-width: 1200px;
+      margin: 0 auto 32px;
+      padding: 0 24px;
+      font-size: 12px;
+      color: rgba(15, 23, 42, 0.55);
+    }
+    /* Full-width panels for diagnostics so the monitor strip is not squeezed */
+    main > section.panel-span-full {
+      grid-column: 1 / -1;
+    }
+    /* Short z_self tracks to avoid horizontal scroll */
+    .soul-monitor-z-bars-wrap {
+      max-width: min(300px, 100%);
+      box-sizing: border-box;
+    }
+    .soul-monitor-z-bars-wrap .z-bar-track {
+      min-width: 0;
+      flex: 0 0 100px;
+      width: 100px;
+      max-width: 100px;
+    }
+    .soul-monitor-container {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    #monitor-scalars {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    #monitor-zs-compact {
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: auto;
+    }
+    #chat-panel,
+    #core-panel {
+      min-width: 0;
+    }
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .soul-monitor-z-bars-wrap .z-bar-track {
+        flex: 1 1 auto;
+        width: auto;
+        max-width: min(120px, 28vw);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Persona Self-Aware Console</h1>
+    <p>Wrapper over <a href="/docs" style="color:#fff;font-weight:600;text-decoration:underline;">OpenAPI (http://localhost:8080/docs)</a> for OpenAPI; quick access to chat, introspection, Self State, and persona search.</p>
+  </header>
+
+  <main>
+    <section id="chat-panel">
+      <h2><span></span>Chat & introspection</h2>
+      <form id="chat-form">
+        <div class="inline-controls">
+          <label class="label-inline">
+            Session ID
+            <input type="text" id="session-id" value="selfing-session" autocomplete="off" />
+          </label>
+          <button type="button" class="secondary-btn" id="btn-new-window" title="Open in a parallel window for social testing">🔗 Parallel window</button>
+          <label class="label-inline">
+            Temperature
+            <input type="number" id="temperature" value="0.3" step="0.1" min="0" max="1" />
+          </label>
+          <button type="submit" id="send-btn">Send to /api/chat</button>
+        </div>
+        <label>
+          Your message
+          <textarea id="user-message" placeholder="e.g. What are your core principles?" required></textarea>
+        </label>
+        <div class="chat-history" id="chat-history">
+          <div class="chat-message assistant">👋 Welcome — type a message and send to call `/api/chat`.</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <div id="chat-status" class="status"></div>
+          <div id="ws-status" style="font-size: 12px; color: #666;">🔴 Disconnected</div>
+        </div>
+      </form>
+    </section>
+
+    <section id="core-panel">
+      <h2><span></span>Core persona</h2>
+      <div class="inline-controls">
+        <button type="button" class="secondary-btn" id="btn-core-list">List /persona/core</button>
+      </div>
+      <div class="panel-body" id="core-list-panel">No core persona query yet.</div>
+    </section>
+    <section class="meta-panel panel-span-full">
+      <h2><span></span>Status & diagnostics</h2>
+      
+      <!-- Internal state -->
+      <div class="soul-monitor-container" style="grid-column: 1 / -1; background: #f0fdf4; padding: 16px; border-radius: 12px; border: 1px solid #bbf7d0; margin-bottom: 16px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+            Internal state
+            <span id="monitor-dormant-badge" style="display: none; font-size: 12px; background: #999; color: white; padding: 2px 6px; border-radius: 4px;">💤 DORMANT</span>
+          </h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <!-- Energy Column -->
+              <div>
+                  <label style="font-size: 13px;">⚡ Energy</label>
+                  <div style="background: #e5e7eb; height: 20px; border-radius: 10px; overflow: hidden; margin-top: 5px; border: 1px solid #d1d5db;">
+                      <div id="monitor-energy-bar" style="width: 100%; height: 100%; background: #22c55e; transition: width 0.5s ease-out;"></div>
+                  </div>
+                  <div style="font-size: 12px; margin-top: 4px; text-align: right; font-family: monospace;" id="monitor-energy-text">100.0 / 100</div>
+              </div>
+              
+              <!-- Needs Column -->
+              <div>
+                  <label style="font-size: 13px;">❤️ Needs</label>
+                  <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 5px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="width: 100px; font-size: 11px; text-align: right;">Connection</span>
+                          <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                              <div id="monitor-need-conn" style="width: 80%; height: 100%; background: #3b82f6; border-radius: 4px; transition: width 0.5s;"></div>
+                          </div>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="width: 100px; font-size: 11px; text-align: right;">Clarity</span>
+                          <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                              <div id="monitor-need-clar" style="width: 80%; height: 100%; background: #f59e0b; border-radius: 4px; transition: width 0.5s;"></div>
+                          </div>
+                      </div>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="width: 100px; font-size: 11px; text-align: right;">Novelty</span>
+                          <div style="flex: 1; background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                              <div id="monitor-need-nov" style="width: 50%; height: 100%; background: #a855f7; border-radius: 4px; transition: width 0.5s;"></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- z_self derived bars + ZS text (same layout as Needs) -->
+          <div style="margin-top: 16px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <label style="font-size: 13px; margin: 0;">📊 Live state (z_self)</label>
+                <button type="button" id="btn-refresh-soul-monitor" class="secondary-btn" style="font-size: 11px; padding: 4px 10px;">Refresh</button>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin: 4px 0 8px;">
+                Same source as Connection: <code>GET /self/summary</code>; bar maps [-1,1] → 0–100% (neutral 0 → 50%). Compact text mirrors model ZS row.
+              </div>
+              <div class="soul-monitor-z-bars-wrap" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Arousal</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-arousal" style="width: 50%; height: 100%; background: #f97316; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-arousal-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Valence</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-valence" style="width: 50%; height: 100%; background: #10b981; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-valence-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Control</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-control" style="width: 50%; height: 100%; background: #6366f1; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-control-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Viscosity</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-viscosity" style="width: 50%; height: 100%; background: #78716c; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-viscosity-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Vitality</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-vitality" style="width: 50%; height: 100%; background: #22c55e; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-vitality-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Pain</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-pain" style="width: 0%; height: 100%; background: #ef4444; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-pain-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Anxiety</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-anxiety" style="width: 50%; height: 100%; background: #ea580c; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-anxiety-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Warmth</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-warmth" style="width: 50%; height: 100%; background: #ec4899; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-warmth-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 118px; font-size: 11px; text-align: right; flex-shrink: 0;">Drift L1</span>
+                      <div class="z-bar-track" style="background: #e5e7eb; height: 8px; border-radius: 4px; overflow: hidden;">
+                          <div id="monitor-z-drift" style="width: 0%; height: 100%; background: #94a3b8; border-radius: 4px; transition: width 0.45s;"></div>
+                      </div>
+                      <span id="monitor-z-drift-t" style="width: 36px; font-size: 10px; font-family: monospace; text-align: right; flex-shrink: 0; color: #64748b;">—</span>
+                  </div>
+              </div>
+              <pre id="monitor-zs-compact" style="margin: 10px 0 0; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; max-height: 100px; overflow-y: auto;">Loading from server…</pre>
+              <div id="monitor-scalars" style="font-size: 10px; color: #64748b; margin-top: 6px; line-height: 1.5; font-family: ui-monospace, monospace;"></div>
+          </div>
+          
+          <!-- Inner Monologue Stream -->
+          <div style="margin-top: 16px;">
+              <label style="font-size: 13px;">🧠 Inner monologue</label>
+              <div id="monitor-inner-stream" style="background: #1e293b; color: #4ade80; font-family: 'Fira Code', monospace; padding: 12px; border-radius: 8px; min-height: 60px; max-height: 150px; overflow-y: auto; font-size: 12px; margin-top: 5px; line-height: 1.5; white-space: pre-wrap;">
+                  <span style="opacity: 0.5;">(waiting for reasoning...)</span>
+              </div>
+          </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <strong>Self Tick count</strong>
+          <div id="stat-tick-count">-</div>
+        </div>
+        <div class="stat-card">
+          <strong>Drift</strong>
+          <div id="stat-drift">-</div>
+        </div>
+        <div class="stat-card">
+          <strong>Introspection confidence</strong>
+          <div id="stat-confidence">-</div>
+        </div>
+        <div class="stat-card">
+          <strong>Self Tick fired</strong>
+          <div id="stat-tick-trigger">-</div>
+        </div>
+      </div>
+      <div>
+        <label>Introspection report</label>
+        <div style="font-size: 12px; color: #64748b; margin: 4px 0 6px;">
+          Shows structured fields <strong>except inner_monologue</strong> (long reasoning is duplicated in the stream above).
+        </div>
+        <div class="panel-body" id="introspection-panel">No introspection yet.</div>
+      </div>
+      <div>
+        <label>Reflection & persona updates</label>
+        <div class="panel-body" id="reflection-panel">No reflection yet.</div>
+      </div>
+    </section>
+
+    <section class="panel-span-full">
+      <h2><span></span>Maintenance: reflection cleanup</h2>
+      <div class="inline-controls">
+        <label class="label-inline">
+          Keep last N reflection logs per session
+          <input type="number" id="cleanup-keep-last" value="200" min="0" step="10" />
+        </label>
+        <label class="label-inline">
+          Delete records older than N days
+          <input type="number" id="cleanup-older-days" value="30" min="0" step="1" />
+        </label>
+      </div>
+      <div class="inline-controls" style="margin-top: 8px;">
+        <label class="label-inline" style="gap: 6px;">
+          <input type="checkbox" id="cleanup-clear-reflection" checked />
+          Clear chat_turns.reflection (debug)
+        </label>
+        <label class="label-inline" style="gap: 6px;">
+          <input type="checkbox" id="cleanup-clear-introspection" />
+          Clear chat_turns.introspection (debug, careful)
+        </label>
+        <button type="button" class="danger-btn" id="btn-cleanup-reflection">Run cleanup /maintenance/cleanup_reflection_artifacts</button>
+      </div>
+      <div class="status" style="margin-top: 8px;">
+        Note: does <strong>not</strong> delete persona rules (persona_items); only reflection logs / debug fields to cap DB size.
+      </div>
+      <div class="panel-body" id="cleanup-result">Cleanup not run yet.</div>
+    </section>
+
+    <section>
+      <h2><span></span>Self state & history</h2>
+      <div class="inline-controls">
+        <input type="text" id="state-session-id" placeholder="Session ID" value="selfing-session" />
+        <button type="button" class="secondary-btn" id="fetch-self">GET /self/state</button>
+        <button type="button" class="secondary-btn" id="fetch-versions">GET /self/versions</button>
+        <button type="button" class="secondary-btn" id="fetch-summary">Summary</button>
+        <button type="button" class="secondary-btn" id="fetch-trajectory">Trajectory</button>
+        <button type="button" class="secondary-btn" id="btn-sync-rules" style="background: linear-gradient(135deg, #10b981, #34d399);">🔄 Sync rules → z_self</button>
+        <button type="button" class="secondary-btn" id="btn-sleep" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">💤 Trigger sleep</button>
+        <button type="button" class="secondary-btn" id="btn-mind-wandering" style="background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white;">🧠 Mind wandering</button>
+        <button type="button" class="secondary-btn" id="btn-shadow-theater" style="background: linear-gradient(135deg, #f59e0b, #f97316); color: white;">🎭 Shadow theatre</button>
+        <button type="button" class="danger-btn" id="btn-rollback">Rollback self</button>
+      </div>
+      <div class="panel-body" id="self-state-panel">No self state query yet.</div>
+    </section>
+
+    <section>
+      <h2><span></span>Persona search</h2>
+      <div class="inline-controls">
+        <input type="text" id="persona-query" placeholder="Keywords, e.g. transparency, evidence" />
+        <input type="number" id="persona-limit" value="5" min="1" max="20" />
+        <button type="button" class="secondary-btn" id="persona-search">Call /persona/search</button>
+        <button type="button" class="danger-btn" id="clear-persona">Clear results</button>
+      </div>
+      <div class="panel-body" id="persona-panel">
+        No persona search yet.
+        <br /><br />
+        Tip: in JSON, <code>is_core</code>/<code>core_version</code>/<code>locked</code> mark core persona, core version, and lock state.
+      </div>
+    </section>
+    
+    <section>
+      <h2><span></span>Rule management</h2>
+      
+      <!-- Rule list and create -->
+      <div class="inline-controls" style="margin-bottom: 16px;">
+        <button type="button" class="secondary-btn" id="btn-list-all-rules">List all rules</button>
+        <button type="button" class="secondary-btn" id="btn-create-rule">Create rule</button>
+        <input type="number" id="rule-list-limit" value="100" min="1" max="1000" style="width: 100px;" placeholder="Max count" />
+      </div>
+      
+      <!-- Create rule form -->
+      <div id="rule-create-form" style="display: none; margin-bottom: 16px; padding: 16px; background: rgba(248, 250, 255, 0.75); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.25);">
+        <h3 style="font-size: 14px; margin: 0 0 12px 0;">Create rule</h3>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Rule text <span style="color: #d14343;">*</span></label>
+          <textarea id="rule-create-text" placeholder="e.g. I lead with evidence" required style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; font-size: 13px; resize: vertical;"></textarea>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Importance (0-1)</label>
+            <input type="number" id="rule-create-importance" value="0.5" min="0" max="1" step="0.1" style="width: 100%; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; font-size: 13px;" />
+          </div>
+          <div>
+            <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Score (0-1)</label>
+            <input type="number" id="rule-create-score" value="0.5" min="0" max="1" step="0.1" style="width: 100%; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; font-size: 13px;" />
+          </div>
+        </div>
+        <div class="inline-controls">
+          <button type="button" class="secondary-btn" id="btn-submit-create">Submit</button>
+          <button type="button" class="danger-btn" id="btn-cancel-create">Cancel</button>
+        </div>
+      </div>
+      
+      <!-- Rule list panel -->
+      <div id="rule-list-panel" style="display: none; margin-bottom: 16px; padding: 16px; background: rgba(248, 250, 255, 0.75); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.25); max-height: 400px; overflow-y: auto;">
+        <h3 style="font-size: 14px; margin: 0 0 12px 0;">Rule list</h3>
+        <div id="rule-list-content"></div>
+      </div>
+      
+      <div class="inline-controls">
+        <input type="text" id="rule-modify-id" placeholder="Rule id, e.g. core-001" />
+        <button type="button" class="secondary-btn" id="btn-load-rule">Load rule</button>
+        <button type="button" class="secondary-btn" id="btn-rule-history">History</button>
+        <button type="button" class="secondary-btn" id="btn-rule-source">Source</button>
+      </div>
+      
+      <!-- Edit rule form -->
+      <div id="rule-modify-form" style="display: none; margin-top: 16px; padding: 16px; background: rgba(248, 250, 255, 0.75); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.25);">
+        <h3 style="font-size: 14px; margin: 0 0 12px 0;">Edit rule</h3>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Rule ID</label>
+          <input type="text" id="rule-form-id" readonly style="width: 100%; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; background: rgba(255, 255, 255, 0.5); font-size: 13px;" />
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Current rule text</label>
+          <textarea id="rule-form-old-text" readonly style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; background: rgba(255, 255, 255, 0.5); font-size: 13px; resize: vertical;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">New rule text <span style="color: #d14343;">*</span></label>
+          <textarea id="rule-form-new-text" placeholder="Enter new rule text..." required style="width: 100%; min-height: 100px; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; font-size: 13px; resize: vertical;"></textarea>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px;">Reason (optional)</label>
+          <input type="text" id="rule-form-reason" placeholder="e.g. clarify wording per feedback" style="width: 100%; padding: 8px; border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; font-size: 13px;" />
+        </div>
+        <div class="inline-controls">
+          <button type="button" class="secondary-btn" id="btn-submit-modify">Save changes</button>
+          <button type="button" class="danger-btn" id="btn-cancel-modify">Cancel</button>
+        </div>
+      </div>
+      
+      
+      <div class="inline-controls" style="margin-top: 16px;">
+        <button type="button" class="secondary-btn" id="btn-compress-rules">Compress rules</button>
+        <button type="button" class="secondary-btn" id="btn-check-consistency">Check consistency</button>
+        <button type="button" class="secondary-btn" id="btn-consistency-history">Consistency history</button>
+        <button type="button" class="secondary-btn" id="btn-evolution-summary">Evolution summary</button>
+        <button type="button" class="secondary-btn" id="btn-evolution-detail">Evolution detail</button>
+      </div>
+      <div class="panel-body" id="rule-management-panel">Enter a rule id and click &quot;Load rule&quot;, or &quot;List all rules&quot; for the full list.</div>
+    </section>
+    <section>
+      <h2><span></span>Dimension patterns</h2>
+      <div class="inline-controls">
+        <input type="number" id="dimension-limit" value="60" min="10" max="200" />
+        <button type="button" class="secondary-btn" id="btn-load-dimensions">Load /dimension/patterns</button>
+      </div>
+      <div class="panel-body" id="dimension-panel">
+        Click "Load" to fetch rule, emotion, and motivation patterns with counts.
+      </div>
+    </section>
+    
+  </main>
+
+  <footer>
+    This page calls the FastAPI REST API directly. Start the backend (and vLLM if used) first.
+    Source lives at <code>frontend/index.html</code>; customize layout and calls as needed.
+  </footer>
+
+  <script>
+    const API_BASE = window.location.origin;
+    const chatForm = document.getElementById('chat-form');
+    const sendBtn = document.getElementById('send-btn');
+    const messageInput = document.getElementById('user-message');
+    const sessionInput = document.getElementById('session-id');
+    const tempInput = document.getElementById('temperature');
+    const chatHistoryEl = document.getElementById('chat-history');
+    const chatStatus = document.getElementById('chat-status');
+    const statTickCount = document.getElementById('stat-tick-count');
+    const statDrift = document.getElementById('stat-drift');
+    const statConfidence = document.getElementById('stat-confidence');
+    const statTickTrigger = document.getElementById('stat-tick-trigger');
+    
+    // Internal state elements
+    const monitorEnergyBar = document.getElementById('monitor-energy-bar');
+    const monitorEnergyText = document.getElementById('monitor-energy-text');
+    const monitorNeedConn = document.getElementById('monitor-need-conn');
+    const monitorNeedClar = document.getElementById('monitor-need-clar');
+    const monitorNeedNov = document.getElementById('monitor-need-nov');
+    const monitorInnerStream = document.getElementById('monitor-inner-stream');
+    const monitorDormantBadge = document.getElementById('monitor-dormant-badge');
+    const monitorZsCompact = document.getElementById('monitor-zs-compact');
+    const monitorScalars = document.getElementById('monitor-scalars');
+    const btnRefreshSoulMonitor = document.getElementById('btn-refresh-soul-monitor');
+
+    const introspectionPanel = document.getElementById('introspection-panel');
+    const reflectionPanel = document.getElementById('reflection-panel');
+    const selfStatePanel = document.getElementById('self-state-panel');
+    const fetchSelfBtn = document.getElementById('fetch-self');
+    const fetchVersionsBtn = document.getElementById('fetch-versions');
+    const stateSessionInput = document.getElementById('state-session-id');
+    const personaPanel = document.getElementById('persona-panel');
+    const personaQueryInput = document.getElementById('persona-query');
+    const personaLimitInput = document.getElementById('persona-limit');
+    const personaSearchBtn = document.getElementById('persona-search');
+    const personaClearBtn = document.getElementById('clear-persona');
+    const coreListPanel = document.getElementById('core-list-panel');
+    const btnCoreList = document.getElementById('btn-core-list');
+    const btnNewWindow = document.getElementById('btn-new-window');
+
+    btnNewWindow.addEventListener('click', () => {
+      const currentSid = sessionInput.value.trim();
+      const newSid = prompt('New window session id (e.g. session-b):', currentSid + '-parallel');
+      if (newSid) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sessionId', newSid);
+        window.open(url.toString(), '_blank');
+      }
+    });
+
+    // Init Session ID from URL on load
+    window.addEventListener('load', async () => {
+      await fetchAgentName();
+      const params = new URLSearchParams(window.location.search);
+      const sid = params.get('sessionId');
+      if (sid) {
+        sessionInput.value = sid;
+        loadSessionHistory(sid);
+      }
+    });
+
+    // Reload history when Session ID changes
+    sessionInput.addEventListener('change', () => {
+      const sid = sessionInput.value.trim();
+      if (sid) loadSessionHistory(sid);
+    });
+
+    async function loadSessionHistory(sessionId) {
+      chatStatus.textContent = '⏳ Loading chat history...';
+      try {
+        const data = await apiFetch(`/api/chat/history?sessionId=${encodeURIComponent(sessionId)}`);
+        conversation.length = 0; // clear local buffer
+        if (data.history && data.history.length > 0) {
+          data.history.forEach(turn => {
+            // Backend history: role user/assistant + is_system_reminder
+            conversation.push({ role: turn.role, content: turn.content, is_system_reminder: turn.is_system_reminder });
+          });
+        }
+        if (data.agent_name) agentDisplayName = data.agent_name;
+        renderHistory();
+        chatStatus.textContent = `✅ Loaded ${conversation.length} message(s) for session ${sessionId}`;
+        
+        // Refresh monitor once
+        fetchSelfSummaryForMonitor();
+      } catch (err) {
+        console.warn('loadHistory failed:', err);
+        chatStatus.textContent = `⚠️ Could not load history: ${err.message}`;
+      }
+    }
+
+    const conversation = [];
+    // Prefer config.js; else fetch /api/system/config
+    let agentDisplayName = (typeof window !== 'undefined' && window.__AGENT_CONFIG__) ? (window.__AGENT_CONFIG__.agent_name || 'Agent') : 'Agent';
+
+    async function fetchAgentName() {
+      try {
+        const data = await apiFetch('/api/system/config');
+        if (data && data.agent_name) {
+          agentDisplayName = data.agent_name;
+        }
+      } catch (e) {
+        console.warn('[Config] agent_name unavailable, using default Agent:', e);
+      }
+    }
+
+    async function apiFetch(path, options = {}) {
+      const controller = new AbortController();
+      const cfg = (typeof window !== 'undefined' && window.__AGENT_CONFIG__) || {};
+      const timeoutMs = (Number(cfg.frontend_fetch_timeout_ms) > 0)
+        ? Number(cfg.frontend_fetch_timeout_ms)
+        : 3600000;
+      let abortedByFrontendTimer = false;
+      const timeoutId = setTimeout(() => {
+        abortedByFrontendTimer = true;
+        controller.abort();
+      }, timeoutMs);
+
+      const { headers: optHeaders, signal: optSignal, ...restOptions } = options;
+      const fetchInit = {
+        ...restOptions,
+        headers: { 'Content-Type': 'application/json', ...(optHeaders || {}) },
+        signal: controller.signal,
+      };
+      if (optSignal && typeof AbortSignal !== 'undefined' && typeof AbortSignal.any === 'function') {
+        fetchInit.signal = AbortSignal.any([controller.signal, optSignal]);
+      }
+
+      try {
+        const resp = await fetch(`${API_BASE}${path}`, fetchInit);
+
+        if (!resp.ok) {
+          const text = await resp.text();
+          let errorMsg = `HTTP ${resp.status}`;
+          try {
+            const errorJson = JSON.parse(text);
+            errorMsg = errorJson.detail || errorJson.message || errorMsg;
+          } catch (e) {
+            errorMsg = text || errorMsg;
+          }
+          throw new Error(errorMsg);
+        }
+        
+        const contentType = resp.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          return await resp.json();
+        } else {
+          const text = await resp.text();
+          return { response: text };
+        }
+      } catch (err) {
+        console.error('apiFetch error:', err);
+        if (err.name === 'AbortError' || (err.message && err.message.includes('aborted'))) {
+          if (abortedByFrontendTimer) {
+            const mins = Math.max(1, Math.round(timeoutMs / 60000));
+            throw new Error(
+              `Request timed out after ~ ${mins}  min (parameters.chat.frontend_fetch_timeout_ms). ` +
+              'Long multi-turn chats with tools stack time; raise that setting in config/settings.yaml if needed.'
+            );
+          }
+          throw new Error(
+            'Request aborted (tab closed, refresh, network drop, or proxy closed the stream).'
+          );
+        }
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          throw new Error(`Network error: cannot reach server at ${API_BASE}`);
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    /**
+     * @param {{ skipAutoScroll?: boolean }} opts
+     * When skipAutoScroll is true (e.g. rapid tool-progress inserts), preserve distance-from-bottom instead of jumping to the latest line.
+     */
+    function renderHistory(opts = {}) {
+      if (!chatHistoryEl) {
+        console.error('chatHistoryEl missing');
+        return;
+      }
+      const skipAutoScroll = opts.skipAutoScroll === true;
+      let distFromBottom = 0;
+      if (skipAutoScroll) {
+        const el = chatHistoryEl;
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+        distFromBottom = maxScroll - el.scrollTop;
+      }
+      chatHistoryEl.innerHTML = '';
+      if (conversation.length === 0) {
+        chatHistoryEl.innerHTML = '<div class="chat-message assistant">👋 Welcome — type a message and send to call `/api/chat`.</div>';
+        setTimeout(() => {
+          if (skipAutoScroll) {
+            const el = chatHistoryEl;
+            const nm = Math.max(0, el.scrollHeight - el.clientHeight);
+            el.scrollTop = Math.max(0, nm - distFromBottom);
+          } else {
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+          }
+        }, 10);
+        return;
+      }
+      conversation.forEach((item) => {
+        const div = document.createElement('div');
+        div.className = `chat-message ${item.role}${item.isProgress ? ' progress' : ''}`;
+        // System reminders labeled as system, not user
+        const raw = (item.content || '').trim();
+        // Prefer backend flag; legacy content prefixes still work
+        const isSystemReminder = item.role === 'user' && (
+          item.is_system_reminder === true ||
+          raw.startsWith('[system]') ||
+          raw.startsWith('[scheduled reminder]') ||
+          raw.startsWith('[scheduled task due]') ||
+          raw.startsWith('[system] [scheduled reminder]')
+        );
+        const label = item.role === 'user' ? (isSystemReminder ? '⏰ system' : '🧑 user') : (item.isProgress ? '🔧 progress' : agentDisplayName);
+        div.textContent = `${label}:\n${item.content}`;
+        if (item.isProgress) div.style.cssText = 'opacity: 0.85; font-size: 0.9em; color: #64748b;';
+        chatHistoryEl.appendChild(div);
+      });
+      setTimeout(() => {
+        const el = chatHistoryEl;
+        if (skipAutoScroll) {
+          const nm = Math.max(0, el.scrollHeight - el.clientHeight);
+          el.scrollTop = Math.max(0, nm - distFromBottom);
+        } else {
+          el.scrollTop = el.scrollHeight;
+        }
+      }, 10);
+    }
+
+    function renderJson(target, data, emptyHint = 'No data') {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        target.textContent = emptyHint;
+        return;
+      }
+      target.textContent = JSON.stringify(data, null, 2);
+    }
+
+    /** Normalize reflection payload: added/removed may be a number or a list — turn into display counts. */
+    function reflectionCounts(ref) {
+      if (!ref || typeof ref !== 'object') return null;
+      const n = (v) => (Array.isArray(v) ? v.length : (typeof v === 'number' && !Number.isNaN(v) ? v : 0));
+      return {
+        added: n(ref.added),
+        merged: n(ref.merged),
+        updated: n(ref.updated),
+        removed: n(ref.removed),
+        total: ref.total ?? undefined,
+      };
+    }
+
+    /**
+     * Reflection runs in background_tasks (~3s delay) and calls the LLM; a single 2s poll often misses cache — poll with backoff.
+     */
+    async function pollReflectionPanel(sessionId, opts = {}) {
+      const firstDelayMs = opts.firstDelayMs ?? 4000;
+      const intervalMs = opts.intervalMs ?? 2800;
+      const maxAttempts = opts.maxAttempts ?? 8;
+      await new Promise((r) => setTimeout(r, firstDelayMs));
+      for (let i = 0; i < maxAttempts; i++) {
+        reflectionPanel.textContent =
+          `Fetching reflection/Persona… (attempt ${i + 1}/${maxAttempts} , reflection starts ~3s after reply)`;
+        const reflectionData = await fetchLastReflection(sessionId);
+        if (reflectionData && reflectionData.exists && reflectionData.reflection) {
+          const ref = reflectionData.reflection;
+          const c = reflectionCounts(ref);
+          const summary = {
+            status: ref.status,
+            reason: ref.reason,
+            pipeline_ran: ref.pipeline_ran,
+            min_evidence: ref.min_evidence,
+            estimated_turns: ref.estimated_turns,
+            ...c,
+            timestamp: reflectionData.timestamp,
+            turn_index: reflectionData.turn_index,
+          };
+          renderJson(reflectionPanel, summary, 'No reflection yet.');
+          return;
+        }
+        await new Promise((r) => setTimeout(r, intervalMs));
+      }
+      reflectionPanel.textContent =
+        'No reflection snapshot in cache yet. Common causes:\n' +
+        '1) Reflection still running (slow LLM) — send another message or refresh;\n' +
+        '2) Hit a worker without this turn\'s cache — single worker or retry last_reflection;\n' +
+        '3) Session ID differs from the chat request.\n' +
+        'Tip: use persona search / list core or GET /persona/evolution/summary to see rule changes.';
+    }
+
+    /** Accept introspection as either an object or a JSON string from the API. */
+    function normalizeIntrospection(raw) {
+      if (raw == null) return null;
+      if (typeof raw === 'string') {
+        try {
+          const o = JSON.parse(raw);
+          return typeof o === 'object' && o !== null && !Array.isArray(o) ? o : null;
+        } catch {
+          return null;
+        }
+      }
+      if (typeof raw === 'object' && !Array.isArray(raw)) return raw;
+      return null;
+    }
+
+    /** Return inner monologue text when non-blank; otherwise null. */
+    function getInnerMonologueForDisplay(result) {
+      const intro = normalizeIntrospection(result && result.introspection);
+      if (!intro || intro.inner_monologue == null) return null;
+      const s = String(intro.inner_monologue);
+      return s.trim() === '' ? null : s;
+    }
+
+    function formatScalar(v) {
+      if (v == null) return '—';
+      if (typeof v === 'number') return Number.isFinite(v) ? v.toFixed(3) : '—';
+      if (typeof v === 'string') return v.length > 96 ? `${v.slice(0, 93)}…` : v;
+      return String(v);
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /** Map z_self subspace means in ~[-1,1] to bar width 0–100% (0 → 50% neutral). */
+    function signedToBarPercent(v) {
+      if (typeof v !== 'number' || !Number.isFinite(v)) return null;
+      const c = Math.max(-1, Math.min(1, v));
+      return ((c + 1) / 2) * 100;
+    }
+
+    function setZSelfMonitorBars(summary) {
+      if (!summary || typeof summary !== 'object') return;
+      function apply(fillId, textId, v) {
+        const el = document.getElementById(fillId);
+        const te = document.getElementById(textId);
+        const p = signedToBarPercent(v);
+        if (p == null) {
+          if (el) el.style.width = '0%';
+          if (te) te.textContent = '—';
+          return;
+        }
+        if (el) el.style.width = `${p}%`;
+        if (te) te.textContent = `${Math.round(p)}%`;
+      }
+      apply('monitor-z-arousal', 'monitor-z-arousal-t', summary.arousal_mean);
+      apply('monitor-z-valence', 'monitor-z-valence-t', summary.valence_mean ?? summary.pleasure_mean);
+      apply('monitor-z-control', 'monitor-z-control-t', summary.control_mean);
+      apply('monitor-z-viscosity', 'monitor-z-viscosity-t', summary.viscosity_mean);
+      apply('monitor-z-vitality', 'monitor-z-vitality-t', summary.vitality_mean);
+      apply('monitor-z-pain', 'monitor-z-pain-t', summary.pain_mean ?? summary.tension_mean);
+      apply('monitor-z-anxiety', 'monitor-z-anxiety-t', summary.anxiety);
+      apply('monitor-z-warmth', 'monitor-z-warmth-t', summary.warmth);
+      const driftEl = document.getElementById('monitor-z-drift');
+      const driftTe = document.getElementById('monitor-z-drift-t');
+      const dv = summary.drift_l1 ?? summary.drift;
+      if (typeof dv === 'number' && Number.isFinite(dv) && driftEl && driftTe) {
+        const p = Math.max(0, Math.min(100, Math.min(1, dv * 2.5) * 100));
+        driftEl.style.width = `${p}%`;
+        driftTe.textContent = `${Math.round(p)}%`;
+      } else if (driftEl && driftTe) {
+        driftEl.style.width = '0%';
+        driftTe.textContent = '—';
+      }
+    }
+
+    /** @param compactKeyPresent If false, the JSON had no internal_state_compact key (older backend). */
+    function updateSoulMonitorUI(summary, internalStateCompact, compactKeyPresent) {
+      if (!summary || typeof summary !== 'object') return;
+      
+      // Energy bar
+      if (summary.energy !== undefined) {
+          const energy = Math.max(0, Math.min(100, summary.energy));
+          monitorEnergyBar.style.width = `${energy}%`;
+          monitorEnergyText.textContent = `${energy.toFixed(1)} / 100`;
+          
+          // Hue by level
+          if (energy < 20) monitorEnergyBar.style.background = '#ef4444'; // red
+          else if (energy < 50) monitorEnergyBar.style.background = '#f59e0b'; // yellow
+          else monitorEnergyBar.style.background = '#22c55e'; // green
+          
+          // Dormant Badge
+          monitorDormantBadge.style.display = summary.is_dormant ? 'inline-block' : 'none';
+      }
+      
+      // Needs sub-bars
+      if (summary.needs) {
+          if (summary.needs.connection !== undefined) monitorNeedConn.style.width = `${summary.needs.connection * 100}%`;
+          if (summary.needs.clarity !== undefined) monitorNeedClar.style.width = `${summary.needs.clarity * 100}%`;
+          if (summary.needs.novelty !== undefined) monitorNeedNov.style.width = `${summary.needs.novelty * 100}%`;
+      }
+
+      setZSelfMonitorBars(summary);
+
+      if (monitorZsCompact) {
+        const t =
+          typeof internalStateCompact === 'string'
+            ? internalStateCompact.trim()
+            : internalStateCompact != null
+              ? String(internalStateCompact).trim()
+              : '';
+        if (t) {
+          monitorZsCompact.textContent = t;
+        } else if (compactKeyPresent === false) {
+          monitorZsCompact.textContent =
+            '(Response missing internal_state_compact: backend build likely older than this UI.)';
+        } else {
+          monitorZsCompact.textContent =
+            '(internal_state_compact empty: check server WARNING internal_state_compact for monitor; if summary has data, DB usually still has z_self.)';
+        }
+      }
+
+      if (monitorScalars) {
+        const pairs = [
+          ['tick', summary.tick],
+          ['drift', summary.drift],
+          ['drift_l1', summary.drift_l1],
+          ['emotion', summary.emotion],
+          ['emotion_I', summary.emotion_intensity],
+          ['motivation', summary.motivation],
+          ['motivation_I', summary.motivation_intensity],
+          ['arousal_m', summary.arousal_mean],
+          ['valence_m', summary.valence_mean ?? summary.pleasure_mean],
+          ['control_m', summary.control_mean],
+          ['viscosity_m', summary.viscosity_mean],
+          ['vitality_m', summary.vitality_mean],
+          ['pain_m', summary.pain_mean ?? summary.tension_mean],
+          ['anxiety', summary.anxiety],
+          ['warmth', summary.warmth],
+          ['meaning', summary.meaning],
+          ['conf', summary.confidence_overall],
+          ['L0_align', summary.l0_alignment_safety],
+          ['somatic', summary.somatic_desc],
+        ];
+        const parts = pairs
+          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .map(
+            ([k, v]) =>
+              `<span style="margin-right:14px;"><b>${escHtml(k)}</b>=${escHtml(formatScalar(v))}</span>`
+          );
+        monitorScalars.innerHTML = parts.length
+          ? parts.join('')
+          : '<span style="opacity:0.6;">(No numeric subfields yet — complete a session init.)</span>';
+      }
+    }
+
+    function updateMeta(result) {
+      const introspectionObj = normalizeIntrospection(result && result.introspection);
+      // Legacy fields (tick_count / drift / self_tick_triggered) vs meta.self_tick / meta.self_state
+      const meta = result && typeof result === 'object' ? (result.meta || {}) : {};
+      const tickCount =
+        result?.tick_count ??
+        meta?.self_tick?.count ??
+        meta?.self_state?.tick ??
+        '-';
+      statTickCount.textContent = tickCount;
+
+      const ss = meta?.self_state;
+      const driftVal =
+        result?.drift ??
+        (typeof ss?.drift === 'number' && Number.isFinite(ss.drift) ? ss.drift : null) ??
+        (typeof ss?.drift_l1 === 'number' && Number.isFinite(ss.drift_l1) ? ss.drift_l1 : null);
+      statDrift.textContent = (typeof driftVal === 'number') ? driftVal.toFixed(6) : '-';
+
+      // SelfTick is async: show scheduled flag or legacy self_tick_triggered
+      const scheduled = meta?.self_tick?.scheduled;
+      const legacyTriggered = result?.self_tick_triggered;
+      if (legacyTriggered === true) {
+        statTickTrigger.textContent = 'YES ✅';
+      } else if (legacyTriggered === false) {
+        statTickTrigger.textContent = 'NO';
+      } else if (scheduled === true) {
+        statTickTrigger.textContent = 'SCHEDULED ✅';
+      } else if (scheduled === false) {
+        statTickTrigger.textContent = 'NO';
+      } else {
+        statTickTrigger.textContent = '-';
+      }
+
+      const confidence = introspectionObj?.confidence;
+      statConfidence.textContent = (typeof confidence === 'number') ? confidence.toFixed(2) : (confidence ?? '-');
+      
+      // Update Internal state
+      fetchSelfSummaryForMonitor();
+
+      // Refresh last real tick from self_history so scheduled -> TRIGGERED is visible
+      const sid = sessionInput.value.trim() || 'selfing-session';
+      fetchLastTick(sid).then((lt) => {
+        if (lt && lt.self_state) {
+          const t = lt.self_state.tick;
+          const ts = lt.last_tick?.timestamp ? new Date(lt.last_tick.timestamp).toLocaleTimeString() : '';
+          statTickTrigger.textContent = `TRIGGERED ✅ (Tick #${t}${ts ? ' @ ' + ts : ''})`;
+        }
+      });
+
+      // Inner monologue: only write non-blank text (empty API strings look like “missing content”)
+      if (monitorInnerStream) {
+        const mono = getInnerMonologueForDisplay(result);
+        if (mono) {
+          monitorInnerStream.textContent = mono;
+          monitorInnerStream.scrollTop = monitorInnerStream.scrollHeight;
+        } else {
+          monitorInnerStream.innerHTML = '<span style="opacity: 0.5;">(waiting for reasoning...)</span>';
+        }
+      }
+
+      // Introspection JSON for the panel (strip inner_monologue — already shown above)
+      if (introspectionObj && Object.keys(introspectionObj).length > 0) {
+        const { inner_monologue: _im, ...introspectionReport } = introspectionObj;
+        const rk = Object.keys(introspectionReport);
+        if (rk.length === 0) {
+          introspectionPanel.textContent =
+            '(Only inner_monologue this turn; shown above as subconscious stream. Confidence etc. appear here when parsed.)';
+        } else {
+          renderJson(introspectionPanel, introspectionReport, 'No introspection yet.');
+        }
+      } else {
+        introspectionPanel.textContent =
+          'No introspection yet.\n\nNote: if the model did not emit <thought>, this panel may stay empty.';
+      }
+      if (result.reflection) {
+        const c = reflectionCounts(result.reflection);
+        renderJson(reflectionPanel, c || {}, 'No reflection yet.');
+      } else {
+        reflectionPanel.textContent = 'Reflection / persona update runs in a background thread (~3s after HTTP returns)…';
+        const sid = sessionInput.value.trim() || 'selfing-session';
+        pollReflectionPanel(sid);
+      }
+    }
+
+    async function fetchSelfSummaryForMonitor() {
+        const sessionId = sessionInput.value.trim() || 'selfing-session';
+        if (monitorZsCompact) {
+          monitorZsCompact.textContent = 'Loading from server…';
+        }
+        try {
+            const data = await apiFetch(`/self/summary?sessionId=${encodeURIComponent(sessionId)}`);
+            if (data.summary) {
+                updateSoulMonitorUI(
+                  data.summary,
+                  data.internal_state_compact,
+                  Object.prototype.hasOwnProperty.call(data, 'internal_state_compact')
+                );
+            } else if (monitorZsCompact) {
+                monitorZsCompact.textContent =
+                  '(No summary: session may lack self_state yet — send a message or initialize z_self.)';
+            }
+        } catch (e) {
+            console.warn('Failed to update monitor:', e);
+            if (monitorZsCompact) {
+              monitorZsCompact.textContent =
+                '(GET /self/summary failed: ' + String(e.message || 'network error') + ')';
+            }
+        }
+    }
+
+    // Latest real SelfTick snapshot (self_history)
+    async function fetchLastTick(sessionId) {
+      try {
+        return await apiFetch(`/self/last_tick?sessionId=${encodeURIComponent(sessionId)}`, { method: 'GET', headers: {} });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // [FIX 2026-01-24] Last reflection snapshot (server cache)
+    async function fetchLastReflection(sessionId) {
+      try {
+        return await apiFetch(`/api/chat/last_reflection?sessionId=${encodeURIComponent(sessionId)}`, { method: 'GET', headers: {} });
+      } catch (e) {
+        return null;
+      }
+    }
+
+    chatForm.addEventListener('submit', async (evt) => {
+      evt.preventDefault();
+      chatStatus.textContent = '';
+      const message = messageInput.value.trim();
+      const sessionId = sessionInput.value.trim() || 'selfing-session';
+      const temperature = Number(tempInput.value) || 0.3;
+      if (!message) {
+        chatStatus.textContent = 'Enter a message.';
+        return;
+      }
+
+      sendBtn.disabled = true;
+      messageInput.disabled = true;
+      sessionInput.disabled = true;
+      tempInput.disabled = true;
+
+      conversation.push({ role: 'user', content: message });
+      renderHistory();
+
+      try {
+        const body = { message, sessionId, temperature };
+        chatStatus.textContent = '⏳ Sending request...';
+        const result = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+        if (result && result.agent_name) agentDisplayName = result.agent_name;
+        // Validate response shape
+        if (!result || typeof result !== 'object') {
+          throw new Error('Bad response shape: ' + JSON.stringify(result));
+        }
+        
+        const responseText = result.response || result.message || '(no response)';
+        conversation.push({ role: 'assistant', content: responseText });
+        renderHistory();
+        updateMeta(result);
+        const meta = result && typeof result === 'object' ? (result.meta || {}) : {};
+        const tickCount = result.tick_count ?? meta?.self_tick?.count ?? '';
+        const scheduled = meta?.self_tick?.scheduled;
+        chatStatus.textContent = `✅ Request OK: Self Tick #${tickCount}${scheduled ? ' (scheduled for this turn)' : ''}`;
+        chatStatus.classList.remove('error');
+      } catch (err) {
+        console.error('Chat request failed:', err);
+        chatStatus.textContent = `❌ Request failed: ${err.message}`;
+        chatStatus.classList.add('error');
+        // Surface error in chat transcript
+        conversation.push({ role: 'assistant', content: `❌ Error: ${err.message}` });
+        renderHistory();
+      } finally {
+        sendBtn.disabled = false;
+        messageInput.disabled = false;
+        sessionInput.disabled = false;
+        tempInput.disabled = false;
+        messageInput.value = '';
+        messageInput.focus();
+      }
+    });
+    
+    
+    // ---- Rule management ----
+    const ruleManagementPanel = document.getElementById('rule-management-panel');
+    const ruleModifyIdInput = document.getElementById('rule-modify-id');
+    const btnLoadRule = document.getElementById('btn-load-rule');
+    const btnRuleHistory = document.getElementById('btn-rule-history');
+    const btnRuleSource = document.getElementById('btn-rule-source');
+    const btnCompressRules = document.getElementById('btn-compress-rules');
+    const btnCheckConsistency = document.getElementById('btn-check-consistency');
+    const btnEvolutionSummary = document.getElementById('btn-evolution-summary');
+    
+    // List / create rules
+    const btnListAllRules = document.getElementById('btn-list-all-rules');
+    const btnCreateRule = document.getElementById('btn-create-rule');
+    const ruleListLimit = document.getElementById('rule-list-limit');
+    const ruleListPanel = document.getElementById('rule-list-panel');
+    const ruleListContent = document.getElementById('rule-list-content');
+    const ruleCreateForm = document.getElementById('rule-create-form');
+    const ruleCreateText = document.getElementById('rule-create-text');
+    const ruleCreateImportance = document.getElementById('rule-create-importance');
+    const ruleCreateScore = document.getElementById('rule-create-score');
+    const btnSubmitCreate = document.getElementById('btn-submit-create');
+    const btnCancelCreate = document.getElementById('btn-cancel-create');
+    
+    
+    // Edit-rule form refs
+    const ruleModifyForm = document.getElementById('rule-modify-form');
+    const ruleFormId = document.getElementById('rule-form-id');
+    const ruleFormOldText = document.getElementById('rule-form-old-text');
+    const ruleFormNewText = document.getElementById('rule-form-new-text');
+    const ruleFormReason = document.getElementById('rule-form-reason');
+    const btnSubmitModify = document.getElementById('btn-submit-modify');
+    const btnCancelModify = document.getElementById('btn-cancel-modify');
+    
+    // List all rules
+    btnListAllRules.addEventListener('click', async () => {
+      const limit = Number(ruleListLimit.value) || 100;
+      ruleListContent.textContent = 'Loading...';
+      ruleListPanel.style.display = 'block';
+      
+      try {
+        const data = await apiFetch(`/persona?limit=${limit}`);
+        const rules = data.items || [];
+        
+        if (rules.length === 0) {
+          ruleListContent.innerHTML = '<p style="color: #666;">No rules</p>';
+          return;
+        }
+        
+        let html = `<div style="font-size: 12px; color: #666; margin-bottom: 12px;">${rules.length} rule(s)</div>`;
+        html += '<div style="display: grid; gap: 12px;">';
+        
+        rules.forEach((rule) => {
+          html += `<div style="padding: 12px; background: white; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.2);">`;
+          html += `<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">`;
+          html += `<div style="flex: 1;">`;
+          html += `<div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">${rule.text}</div>`;
+          html += `<div style="font-size: 11px; color: #666;">ID: ${rule.id}</div>`;
+          html += `</div>`;
+          html += `<div style="display: flex; gap: 8px; flex-shrink: 0;">`;
+          html += `<button onclick="loadRuleById('${rule.id}')" style="padding: 4px 8px; font-size: 11px; border: 1px solid #4c6ef5; background: white; color: #4c6ef5; border-radius: 4px; cursor: pointer;">Load</button>`;
+          html += `<button onclick="deleteRule('${rule.id}', '${rule.text.replace(/'/g, "\\'")}')" style="padding: 4px 8px; font-size: 11px; border: 1px solid #f87171; background: white; color: #f87171; border-radius: 4px; cursor: pointer;">Delete</button>`;
+          html += `</div>`;
+          html += `</div>`;
+          html += `<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px; color: #666;">`;
+          html += `<div>Score: ${(rule.score || 0).toFixed(3)}</div>`;
+          html += `<div>Importance: ${(rule.importance || 0).toFixed(3)}</div>`;
+          html += `<div>Novelty: ${(rule.novelty || 0).toFixed(3)}</div>`;
+          html += `<div>Reliability: ${(rule.reliability || 0).toFixed(3)}</div>`;
+          html += `</div>`;
+          if (rule.is_core) {
+            html += `<div style="margin-top: 8px; font-size: 11px; color: #4c6ef5;">⭐ Core rule (v${rule.core_version || 0}) ${rule.locked ? '🔒 locked' : ''}</div>`;
+          }
+          html += `</div>`;
+        });
+        
+        html += '</div>';
+        ruleListContent.innerHTML = html;
+      } catch (err) {
+        ruleListContent.textContent = `❌ Load failed: ${err.message}`;
+      }
+    });
+    
+    // loadRuleById
+    window.loadRuleById = function(ruleId) {
+      ruleModifyIdInput.value = ruleId;
+      btnLoadRule.click();
+    };
+    
+    
+    // deleteRule
+    window.deleteRule = async function(ruleId, ruleText) {
+      if (!confirm(`Delete this rule?\n\nText: ${ruleText}\nID: ${ruleId}\n\nIt will be archived (recoverable from DB).`)) {
+        return;
+      }
+      
+      try {
+        const result = await apiFetch(`/persona/${ruleId}`, { method: 'DELETE' });
+        ruleManagementPanel.textContent = `✅ Rule deleted (archived)\nID: ${ruleId}`;
+        // Refresh list
+        if (ruleListPanel.style.display !== 'none') {
+          btnListAllRules.click();
+        }
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Delete failed: ${err.message}`;
+      }
+    };
+    
+    // Create rule submit
+    btnCreateRule.addEventListener('click', () => {
+      ruleCreateForm.style.display = 'block';
+      ruleCreateText.value = '';
+      ruleCreateImportance.value = '0.5';
+      ruleCreateScore.value = '0.5';
+      ruleCreateForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    
+    btnCancelCreate.addEventListener('click', () => {
+      ruleCreateForm.style.display = 'none';
+      ruleCreateText.value = '';
+    });
+    
+    btnSubmitCreate.addEventListener('click', async () => {
+      const text = ruleCreateText.value.trim();
+      if (!text) {
+        ruleManagementPanel.textContent = 'Enter rule text';
+        return;
+      }
+      
+      btnSubmitCreate.disabled = true;
+      ruleManagementPanel.textContent = 'Creating...';
+      
+      try {
+        const payload = {
+          text: text,
+          importance: Number(ruleCreateImportance.value) || 0.5,
+          score: Number(ruleCreateScore.value) || 0.5
+        };
+        
+        const result = await apiFetch('/persona', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        ruleManagementPanel.textContent = `✅ Rule created\nID: ${result.id}\nCreated: ${result.createdAt}`;
+        ruleCreateForm.style.display = 'none';
+        ruleCreateText.value = '';
+        
+        // Refresh list
+        if (ruleListPanel.style.display !== 'none') {
+          btnListAllRules.click();
+        }
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Create failed: ${err.message}`;
+      } finally {
+        btnSubmitCreate.disabled = false;
+      }
+    });
+    
+    
+    // Load rule detail
+    btnLoadRule.addEventListener('click', async () => {
+      const ruleId = ruleModifyIdInput.value.trim();
+      if (!ruleId) {
+        ruleManagementPanel.textContent = 'Enter a rule id first';
+        return;
+      }
+      
+      ruleManagementPanel.textContent = 'Loading...';
+      try {
+        const data = await apiFetch(`/persona/${ruleId}`);
+        
+        // Show detail
+        ruleFormId.value = data.id;
+        ruleFormOldText.value = data.text;
+        ruleFormNewText.value = data.text; // prefilled for quick edits
+        ruleFormReason.value = '';
+        
+        // Show form
+        ruleModifyForm.style.display = 'block';
+        
+        // Build info text
+        let info = `✅ Rule loaded\n\n`;
+        info += `ID: ${data.id}\n`;
+        info += `Score: ${data.score.toFixed(3)}\n`;
+        info += `Importance: ${data.importance.toFixed(3)}\n`;
+        info += `Reliability: ${data.reliability.toFixed(3)}\n`;
+        info += `Evidence count: ${data.evidence_count}\n`;
+        info += `Status: ${data.status}\n`;
+        if (data.is_core) {
+          info += `Core version: ${data.core_version}\n`;
+          info += `Locked: ${data.locked ? 'yes' : 'no'}\n`;
+        }
+        info += `Created: ${data.created_at}\n`;
+        info += `Updated: ${data.last_seen_at}`;
+        
+        ruleManagementPanel.textContent = info;
+        
+        // Scroll to form
+        ruleModifyForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Load failed: ${err.message}`;
+        ruleModifyForm.style.display = 'none';
+      }
+    });
+    
+    // Save changes
+    btnSubmitModify.addEventListener('click', async () => {
+      const ruleId = ruleFormId.value.trim();
+      const newText = ruleFormNewText.value.trim();
+      const reason = ruleFormReason.value.trim() || 'manual edit';
+      
+      if (!ruleId) {
+        ruleManagementPanel.textContent = 'Rule id required';
+        return;
+      }
+      
+      if (!newText) {
+        ruleManagementPanel.textContent = 'New rule text required';
+        return;
+      }
+      
+      if (newText === ruleFormOldText.value.trim()) {
+        ruleManagementPanel.textContent = 'New text matches current; nothing to save';
+        return;
+      }
+      
+      btnSubmitModify.disabled = true;
+      ruleManagementPanel.textContent = 'Saving...';
+      
+      try {
+        const payload = { newText, reason };
+        const result = await apiFetch(`/persona/${ruleId}/modify`, { 
+          method: 'PUT', 
+          body: JSON.stringify(payload) 
+        });
+        
+        ruleManagementPanel.textContent = `✅ Rule updated\n\nOld: ${result.oldText}\nNew: ${result.newText}\nID: ${result.ruleId}`;
+        
+        // Sync old text field
+        ruleFormOldText.value = result.newText;
+        ruleFormNewText.value = result.newText;
+        ruleFormReason.value = '';
+        
+        // Refresh loaded rule
+        setTimeout(() => {
+          btnLoadRule.click();
+        }, 1000);
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Update failed: ${err.message}`;
+      } finally {
+        btnSubmitModify.disabled = false;
+      }
+    });
+    
+    // Cancel edit
+    btnCancelModify.addEventListener('click', () => {
+      ruleModifyForm.style.display = 'none';
+      ruleFormNewText.value = '';
+      ruleFormReason.value = '';
+      ruleManagementPanel.textContent = 'Edit cancelled';
+    });
+    
+    btnRuleHistory.addEventListener('click', async () => {
+      const ruleId = ruleModifyIdInput.value.trim();
+      if (!ruleId) {
+        ruleManagementPanel.textContent = 'Enter a rule id first';
+        return;
+      }
+      try {
+        const data = await apiFetch(`/persona/${ruleId}/history?limit=10`);
+        renderJson(ruleManagementPanel, data, 'No edit history');
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Query failed: ${err.message}`;
+      }
+    });
+    
+    btnRuleSource.addEventListener('click', async () => {
+      const ruleId = ruleModifyIdInput.value.trim();
+      if (!ruleId) {
+        ruleManagementPanel.textContent = 'Enter a rule id first';
+        return;
+      }
+      try {
+        const data = await apiFetch(`/persona/${ruleId}/source`);
+        renderJson(ruleManagementPanel, data, 'No source info');
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Query failed: ${err.message}`;
+      }
+    });
+    
+    btnCompressRules.addEventListener('click', async () => {
+      ruleManagementPanel.textContent = 'Compressing...';
+      try {
+        const data = await apiFetch('/persona/compress?similarity_threshold=0.85&max_items=100', { method: 'POST' });
+        ruleManagementPanel.textContent = `✅ Compression done\nCompressed: ${data.compressed || 0}\nNew abstract rules: ${data.new_rules?.length || 0}`;
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Compress failed: ${err.message}`;
+      }
+    });
+    
+    btnCheckConsistency.addEventListener('click', async () => {
+      const sessionId = sessionInput.value.trim() || 'selfing-session';
+      ruleManagementPanel.textContent = 'Checking...';
+      try {
+        const data = await apiFetch(`/self/consistency?sessionId=${sessionId}&autoFix=true`);
+        const status = data.consistent ? '✅ Consistent' : '⚠️ Inconsistent';
+        ruleManagementPanel.textContent = `${status}\nScore: ${(data.consistency_score || 0).toFixed(3)}\nIssues: ${data.inconsistencies?.length || 0}`;
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Check failed: ${err.message}`;
+      }
+    });
+    
+    btnEvolutionSummary.addEventListener('click', async () => {
+      ruleManagementPanel.textContent = 'Analyzing...';
+      try {
+        const data = await apiFetch('/persona/evolution/summary?daysBack=30');
+        renderJson(ruleManagementPanel, data, 'No evolution data');
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Analysis failed: ${err.message}`;
+      }
+    });
+    
+    // Evolution detail
+    const btnEvolutionDetail = document.getElementById('btn-evolution-detail');
+    btnEvolutionDetail.addEventListener('click', async () => {
+      ruleManagementPanel.textContent = 'Analyzing...';
+      try {
+        const data = await apiFetch('/persona/evolution?daysBack=30&limit=50');
+        renderJson(ruleManagementPanel, data, 'No evolution data');
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Analysis failed: ${err.message}`;
+      }
+    });
+    
+    // Consistency history
+    const btnConsistencyHistory = document.getElementById('btn-consistency-history');
+    btnConsistencyHistory.addEventListener('click', async () => {
+      const sessionId = sessionInput.value.trim() || 'selfing-session';
+      ruleManagementPanel.textContent = 'Querying...';
+      try {
+        const data = await apiFetch(`/self/consistency/history?sessionId=${sessionId}&limit=20`);
+        renderJson(ruleManagementPanel, data, 'No history');
+      } catch (err) {
+        ruleManagementPanel.textContent = `❌ Query failed: ${err.message}`;
+      }
+    });
+    
+    const dimensionPanelEl = document.getElementById('dimension-panel');
+    const dimensionLimitInput = document.getElementById('dimension-limit');
+    const btnLoadDimensions = document.getElementById('btn-load-dimensions');
+
+    btnLoadDimensions?.addEventListener('click', async () => {
+      const limit = Number(dimensionLimitInput?.value) || 60;
+      if (dimensionPanelEl) {
+        dimensionPanelEl.textContent = 'Loading...';
+      }
+      try {
+        const data = await apiFetch(`/dimension/patterns?limit=${limit}`);
+        const stats = data.statistics || {};
+        const lines = [];
+        lines.push(`Rules: ${stats.rules_count ?? 0} / Emotions: ${stats.emotions_count ?? 0} / Motivations: ${stats.motivations_count ?? 0}`);
+        lines.push('\n[Rules]');
+        (data.rules || []).forEach((item, idx) => {
+          lines.push(`${idx + 1}. ${item.text}`);
+        });
+        lines.push('\n[Emotions]');
+        (data.emotions || []).forEach((item, idx) => {
+          lines.push(`${idx + 1}. ${item.text} <${item.emotion_name} @ ${item.intensity?.toFixed?.(2) ?? item.intensity}>`);
+        });
+        lines.push('\n[Motivations]');
+        (data.motivations || []).forEach((item, idx) => {
+          lines.push(`${idx + 1}. ${item.text} <${item.motivation_name} @ ${item.intensity?.toFixed?.(2) ?? item.intensity}>`);
+        });
+        if (dimensionPanelEl) {
+          dimensionPanelEl.textContent = lines.join('\n');
+        }
+      } catch (err) {
+        if (dimensionPanelEl) {
+          dimensionPanelEl.textContent = `❌ Load failed: ${err.message}`;
+        }
+      }
+    });
+
+
+    fetchSelfBtn.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      selfStatePanel.textContent = 'Querying...';
+      try {
+        const params = new URLSearchParams({ sessionId });
+        const data = await apiFetch(`/self/state?${params.toString()}`, { method: 'GET', headers: {} });
+        renderJson(selfStatePanel, data, 'No Self State yet.');
+        
+        // Monitor uses GET /self/summary (z_self scalars)
+        fetchSelfSummaryForMonitor();
+      } catch (err) {
+        selfStatePanel.textContent = `Query failed: ${err.message}`;
+      }
+    });
+
+    fetchVersionsBtn.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      selfStatePanel.textContent = 'Loading versions...';
+      try {
+        const params = new URLSearchParams({ sessionId, limit: 10 });
+        const data = await apiFetch(`/self/versions?${params.toString()}`, { method: 'GET', headers: {} });
+        renderJson(selfStatePanel, data, 'No versions.');
+      } catch (err) {
+        selfStatePanel.textContent = `Versions failed: ${err.message}`;
+      }
+    });
+    
+    // Self summary
+    const fetchSummaryBtn = document.getElementById('fetch-summary');
+    fetchSummaryBtn.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      selfStatePanel.textContent = 'Loading summary...';
+      try {
+        const params = new URLSearchParams({ sessionId });
+        const data = await apiFetch(`/self/summary?${params.toString()}`, { method: 'GET', headers: {} });
+        renderJson(selfStatePanel, data, 'No summary.');
+        if (data.summary) {
+          updateSoulMonitorUI(
+            data.summary,
+            data.internal_state_compact,
+            Object.prototype.hasOwnProperty.call(data, 'internal_state_compact')
+          );
+        }
+      } catch (err) {
+        selfStatePanel.textContent = `Summary failed: ${err.message}`;
+      }
+    });
+    
+    // Self trajectory
+    const fetchTrajectoryBtn = document.getElementById('fetch-trajectory');
+    fetchTrajectoryBtn.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      selfStatePanel.textContent = 'Loading trajectory...';
+      try {
+        const params = new URLSearchParams({ sessionId, limit: 20 });
+        const data = await apiFetch(`/self/trajectory?${params.toString()}`, { method: 'GET', headers: {} });
+        renderJson(selfStatePanel, data, 'No trajectory.');
+      } catch (err) {
+        selfStatePanel.textContent = `Trajectory failed: ${err.message}`;
+      }
+    });
+    
+    // Sync rules to z_self
+    const btnSyncRules = document.getElementById('btn-sync-rules');
+    btnSyncRules.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      if (!confirm(`Sync all persona rules into z_self?\nSession: ${sessionId}\n\nThis writes rule signals into z_self.`)) return;
+      
+      const btn = btnSyncRules;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🔄 Syncing...';
+      selfStatePanel.textContent = 'Syncing...';
+      
+      try {
+        const payload = { sessionId };
+        const result = await apiFetch('/self/sync-rules', { 
+          method: 'POST', 
+          body: JSON.stringify(payload) 
+        });
+        selfStatePanel.textContent = `✅ Sync OK\nRules: ${result.rules_count || 0}\nz_self dim: ${result.z_self_dim || 0}\n${result.message || ''}`;
+      } catch (err) {
+        selfStatePanel.textContent = `❌ Sync failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // Sleep consolidation
+    const btnSleep = document.getElementById('btn-sleep');
+    btnSleep.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      
+      if (!confirm('💤 Sleep consolidation\n\nThis will:\n1. Memory metabolism (compress/forget)\n2. Consolidate narrative memory\n3. Recharge energy to 100%\n\nContinue?')) {
+        return;
+      }
+      
+      const btn = btnSleep;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '💤 Sleeping...';
+      selfStatePanel.textContent = 'Running sleep consolidation (metabolism + energy)...';
+      
+      try {
+        const payload = { sessionId };
+        const result = await apiFetch('/self/sleep', { 
+          method: 'POST', 
+          body: JSON.stringify(payload) 
+        });
+        
+        if (result.ok) {
+          const metabolism = result.metabolism || {};
+          const episodic = metabolism.episodic_metabolism || {};
+          const narrative = metabolism.narrative_consolidated ? '✅ consolidated' : '❌ not consolidated';
+          
+          selfStatePanel.innerHTML = `
+            <div style="margin-bottom: 10px;">
+              <strong>✅ Sleep complete</strong>
+            </div>
+            <div style="background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0; margin-bottom: 8px;">
+              <strong>📊 Metabolism:</strong><br/>
+              - Rules extracted: ${episodic.extracted || 0}<br/>
+              - Turns processed: ${episodic.processed_turns || 0}<br/>
+              - Rules consolidated: ${metabolism.consolidated || 0}<br/>
+              - Rules purged: ${metabolism.excreted || 0}<br/>
+              - Narrative: ${narrative}
+            </div>
+            <div style="background: #dbeafe; padding: 10px; border-radius: 6px; border: 1px solid #93c5fd; margin-top: 8px;">
+              <strong>⚡ Energy:</strong> ${result.energy_recharged ? '✅ recharged to 100%' : '❌ recharge failed'}
+            </div>
+            <div style="margin-top: 8px; font-size: 0.9em; color: #059669;">
+              ${result.message || 'Sleep consolidation finished'}
+            </div>
+          `;
+        } else {
+          selfStatePanel.textContent = `⚠️ Sleep finished with issues: ${result.message || 'unknown error'}`;
+        }
+      } catch (err) {
+        selfStatePanel.textContent = `❌ Sleep failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // Mind wandering
+    const btnMindWandering = document.getElementById('btn-mind-wandering');
+    btnMindWandering.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      
+      const btn = btnMindWandering;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🧠 Wandering...';
+      selfStatePanel.textContent = 'Mind wandering (may take tens of seconds)...';
+      
+      try {
+        const payload = { sessionId };
+        // Long client timeout: generation can be slow
+        const result = await apiFetch('/self/wander', { 
+          method: 'POST', 
+          body: JSON.stringify(payload) 
+        });
+        
+        if (result.status === 'skipped') {
+           selfStatePanel.textContent = `⚠️ Wander skipped: ${result.reason} (often low energy)`;
+        } else {
+           selfStatePanel.innerHTML = `
+             <div style="margin-bottom: 10px;"><strong>✅ Wander complete</strong> (energy used: ${result.energy_consumed})</div>
+             <div style="background: #f0fdf4; padding: 8px; border-radius: 6px; border: 1px solid #bbf7d0; margin-bottom: 8px;">
+               <strong>🤔 Theme: ${result.theme?.title}</strong><br/>
+               <em style="font-size: 0.9em; color: #555;">${result.theme?.description}</em>
+             </div>
+             <div style="white-space: pre-wrap; background: #fff; padding: 8px; border: 1px solid #eee; border-radius: 4px; max-height: 200px; overflow-y: auto; font-size: 0.9em;">${result.thought_stream}</div>
+             <div style="margin-top: 8px; font-size: 0.9em; color: #059669;">
+               Reflection: +${result.reflection_result?.added || 0} rules, merged ${result.reflection_result?.merged || 0}.
+             </div>
+           `;
+        }
+      } catch (err) {
+        selfStatePanel.textContent = `❌ Wander failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+    
+    // Shadow theatre
+    const btnShadowTheater = document.getElementById('btn-shadow-theater');
+    btnShadowTheater.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      
+      if (!confirm('🎭 Shadow theatre costs 20 energy.\n\nSpawns an opposing agent for a real debate.\nIf convinced, z_self may change.\n\nContinue?')) {
+        return;
+      }
+      
+      const btn = btnShadowTheater;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '🎭 Theatre running...';
+      selfStatePanel.textContent = 'Shadow theatre (3–5 min); keep this tab open...';
+      
+      try {
+        const payload = { sessionId };
+        // Long timeout: multi-turn LLM
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 900000); // 15 min
+        
+        let result;
+        try {
+          result = await apiFetch('/self/shadow-theater', { 
+            method: 'POST', 
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+        } catch (err) {
+          // Detect timeout
+          if (err.name === 'AbortError' || err.message.includes('aborted') || err.message.includes('signal')) {
+            throw new Error('Request timed out. Shadow theatre is multi-turn; retry with a longer client timeout.');
+          }
+          throw err;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+        
+        if (result.status === 'skipped') {
+           selfStatePanel.textContent = `⚠️ Shadow theatre skipped: ${result.reason} (needs energy ≥ 40)`;
+        } else if (result.status === 'failed') {
+           selfStatePanel.textContent = `❌ Shadow theatre failed: ${result.error}`;
+        } else {
+           // Debug: log result
+           console.log('Shadow theatre result:', result);
+           const conversation = result.conversation || [];
+           console.log('Conversation:', conversation, 'isArray:', Array.isArray(conversation), 'len:', conversation.length);
+           
+           // Validate conversation array
+           if (!Array.isArray(conversation) || conversation.length === 0) {
+             console.warn('Bad or empty conversation payload:', conversation);
+             selfStatePanel.innerHTML = `
+               <div style="margin-bottom: 10px;">
+                 <strong>✅ Shadow theatre complete</strong> (energy used: ${result.energy_consumed || 20})
+               </div>
+               <div style="background: #fef3c7; padding: 10px; border-radius: 6px; border: 1px solid #fbbf24; margin-bottom: 12px;">
+                 <strong>🎬 Scenario:</strong> ${result.scenario || 'unknown'}<br/>
+                 <strong>👤 Opponent:</strong> ${result.agent_b?.name || 'unknown'} - ${result.agent_b?.description || ''}
+               </div>
+               <div style="padding: 8px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 4px; color: #991b1b;">
+                 ⚠️ No conversation content (empty or invalid payload)
+               </div>
+             `;
+             return;
+           }
+           
+           // escapeHtml for XSS
+           function escapeHtml(text) {
+             const div = document.createElement('div');
+             div.textContent = text;
+             return div.innerHTML;
+           }
+           
+           const convHtml = conversation.map((turn, idx) => {
+             const agentName = turn.agent === 'Agent A' ? '🤖 Self' : '👤 Other';
+             const bgColor = turn.agent === 'Agent A' ? '#f0f9ff' : '#fff7ed';
+             const borderColor = turn.agent === 'Agent A' ? '#3b82f6' : '#f59e0b';
+             const content = escapeHtml(turn.content || '').replace(/\n/g, '<br>');
+             
+             return `<div style="margin-bottom: 8px; padding: 12px; background: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+               <div style="font-weight: 600; margin-bottom: 6px; color: ${borderColor};">
+                 ${agentName} (${turn.agent})
+               </div>
+               <div style="white-space: pre-wrap; line-height: 1.6; color: #1f2937;">
+                 ${content}
+               </div>
+             </div>`;
+           }).join('');
+           
+           const updateInfo = result.update_result || {};
+           const updateHtml = updateInfo.updated ? 
+             `<div style="margin-top: 12px; padding: 10px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 6px;">
+               <strong>✨ z_self updated</strong><br/>
+               <div style="font-size: 0.9em; margin-top: 4px;">
+                 Delta: ${JSON.stringify(updateInfo.delta || {}, null, 2)}<br/>
+                 Beliefs changed: ${updateInfo.changed_beliefs?.join(', ') || 'none'}
+               </div>
+             </div>` : 
+             `<div style="margin-top: 12px; padding: 8px; background: #f3f4f6; border-radius: 6px; font-size: 0.9em; color: #6b7280;">
+               ℹ️ No major change: ${updateInfo.reason || 'not persuaded or change too small'}
+             </div>`;
+           
+           selfStatePanel.innerHTML = `
+             <div style="margin-bottom: 10px;">
+               <strong>✅ Shadow theatre complete</strong> (energy used: ${result.energy_consumed || 20})
+             </div>
+             <div style="background: #fef3c7; padding: 10px; border-radius: 6px; border: 1px solid #fbbf24; margin-bottom: 12px;">
+               <strong>🎬 Scenario:</strong> ${result.scenario || 'unknown'}<br/>
+               <strong>👤 Opponent:</strong> ${result.agent_b?.name || 'unknown'} - ${result.agent_b?.description || ''}
+             </div>
+             <div style="margin-bottom: 12px;">
+               <div style="font-weight: 600; margin-bottom: 8px; color: #374151;">
+                 💬 Debate (${conversation.length} turn(s)):
+               </div>
+               <div style="max-height: 500px; overflow-y: auto; padding: 8px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">
+                 ${convHtml}
+               </div>
+             </div>
+             ${updateHtml}
+           `;
+        }
+      } catch (err) {
+        selfStatePanel.textContent = `❌ Shadow theatre failed: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+    
+    // Self rollback
+    const btnRollback = document.getElementById('btn-rollback');
+    btnRollback.addEventListener('click', async () => {
+      const sessionId = (stateSessionInput.value || sessionInput.value || 'selfing-session').trim();
+      if (!sessionId) return;
+      if (!confirm(`Rollback Self state for session ${sessionId}?`)) return;
+      selfStatePanel.textContent = 'Rolling back...';
+      try {
+        const payload = { sessionId };
+        const result = await apiFetch('/self/rollback', { 
+          method: 'POST', 
+          body: JSON.stringify(payload) 
+        });
+        selfStatePanel.textContent = `✅ Rollback OK\nVersion: ${result.rolledBackTo || 'previous'}`;
+      } catch (err) {
+        selfStatePanel.textContent = `❌ Rollback failed: ${err.message}`;
+      }
+    });
+
+    personaSearchBtn.addEventListener('click', async () => {
+      const query = personaQueryInput.value.trim();
+      const limit = Number(personaLimitInput.value) || 5;
+      if (!query) {
+        personaPanel.textContent = 'Enter search keywords.';
+        return;
+      }
+      personaPanel.textContent = 'Searching...';
+      try {
+        const payload = { query, limit };
+        const data = await apiFetch('/persona/search', { method: 'POST', body: JSON.stringify(payload) });
+        renderJson(personaPanel, data, 'No persona hits.');
+      } catch (err) {
+        personaPanel.textContent = `Search failed: ${err.message}`;
+      }
+    });
+
+    personaClearBtn.addEventListener('click', () => {
+      personaPanel.textContent = 'No persona search yet.';
+      personaQueryInput.value = '';
+    });
+
+
+    // ---- Core persona list ----
+    btnCoreList.addEventListener('click', async () => {
+      coreListPanel.textContent = 'Loading...';
+      try {
+        const data = await apiFetch('/persona/core', { method: 'GET' });
+        renderJson(coreListPanel, data, 'No core persona.');
+      } catch (err) {
+        coreListPanel.textContent = `Load failed: ${err.message}`;
+      }
+    });
+
+
+    // ---- Maintenance: reflection artifact cleanup ----
+    const cleanupKeepLast = document.getElementById('cleanup-keep-last');
+    const cleanupOlderDays = document.getElementById('cleanup-older-days');
+    const cleanupClearReflection = document.getElementById('cleanup-clear-reflection');
+    const cleanupClearIntrospection = document.getElementById('cleanup-clear-introspection');
+    const btnCleanupReflection = document.getElementById('btn-cleanup-reflection');
+    const cleanupResultPanel = document.getElementById('cleanup-result');
+
+    btnCleanupReflection?.addEventListener('click', async () => {
+      const keepLast = Number(cleanupKeepLast?.value) || 200;
+      const olderDays = Number(cleanupOlderDays?.value) || 30;
+      const clearReflection = !!cleanupClearReflection?.checked;
+      const clearIntrospection = !!cleanupClearIntrospection?.checked;
+
+      if (!confirm(
+        `Run cleanup?\n\n` +
+        `- Keep last reflection logs per session: ${keepLast}\n` +
+        `- Drop older than (days): ${olderDays}\n` +
+        `- Clear chat_turns.reflection: ${clearReflection ? 'yes' : 'no'}\n` +
+        `- Clear chat_turns.introspection: ${clearIntrospection ? 'yes' : 'no'}\n\n` +
+        `Note: does not delete persona_items rules.`
+      )) return;
+
+      cleanupResultPanel.textContent = 'Cleaning...';
+      btnCleanupReflection.disabled = true;
+      try {
+        const payload = {
+          keep_last_reflection_events_per_session: keepLast,
+          older_than_days: olderDays,
+          clear_chat_turns_reflection: clearReflection,
+          clear_chat_turns_introspection: clearIntrospection,
+        };
+        const res = await apiFetch('/maintenance/cleanup_reflection_artifacts', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        renderJson(cleanupResultPanel, res, 'No cleanup payload.');
+      } catch (err) {
+        cleanupResultPanel.textContent = `❌ Cleanup failed: ${err.message}`;
+      } finally {
+        btnCleanupReflection.disabled = false;
+      }
+    });
+
+    // While the page is open, periodically refresh last real tick (no chat send required)
+    setInterval(() => {
+      const sid = sessionInput.value.trim() || 'selfing-session';
+      fetchLastTick(sid).then((lt) => {
+        if (lt && lt.self_state) {
+          const t = lt.self_state.tick;
+          const ts = lt.last_tick?.timestamp ? new Date(lt.last_tick.timestamp).toLocaleTimeString() : '';
+          statTickTrigger.textContent = `TRIGGERED ✅ (Tick #${t}${ts ? ' @ ' + ts : ''})`;
+        }
+      });
+    }, 5000);
+
+    // ============================================
+    // [2026-02-22] WebSocket live push + polling fallback
+    // Receive agent-initiated turns in real time
+    // ============================================
+    
+    let ws = null;
+    let wsReconnectTimer = null;
+    let wsReconnectAttempts = 0;
+    const WS_MAX_RECONNECT_ATTEMPTS = 10;
+    const WS_RECONNECT_DELAY = 3000;
+    let wsConnected = false;
+    
+    // WebSocket status chip
+    function updateWsStatus(connected, message = '') {
+      const statusEl = document.getElementById('ws-status');
+      if (statusEl) {
+        if (connected) {
+          statusEl.innerHTML = '🟢 Live';
+          statusEl.style.color = '#059669';
+        } else {
+          statusEl.innerHTML = message || '🔴 Disconnected';
+          statusEl.style.color = '#dc2626';
+        }
+      }
+    }
+    
+    function connectWebSocket() {
+      const sid = sessionInput.value.trim() || 'selfing-session';
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/${encodeURIComponent(sid)}`;
+      
+      console.log(`[WebSocket] Connecting to ${wsUrl}...`);
+      
+      try {
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          console.log('[WebSocket] Connected');
+          wsConnected = true;
+          wsReconnectAttempts = 0;
+          updateWsStatus(true);
+          
+          // Subscribe frame
+          ws.send(JSON.stringify({ type: 'subscribe', session_id: sid }));
+          
+          // Heartbeat keepalive
+          setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send('ping');
+            }
+          }, 30000);
+        };
+        
+        ws.onmessage = (event) => {
+          // Heartbeat response
+          if (event.data === 'pong') {
+            return;
+          }
+          
+          try {
+            const data = JSON.parse(event.data);
+            console.log('[WebSocket] Received:', data);
+            
+            // Dispatch by message type
+            if (data.type === 'thinking') {
+              // [2026-02-27] Thinking state (agent name not hard-coded)
+              chatStatus.innerHTML = '💭 <span style="animation: pulse 1.5s infinite;">Thinking...</span>';
+              chatStatus.style.color = '#8b5cf6';
+              chatStatus.style.fontWeight = '600';
+              // Inject pulse keyframes once
+              if (!document.getElementById('thinking-animation-style')) {
+                const style = document.createElement('style');
+                style.id = 'thinking-animation-style';
+                style.textContent = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }';
+                document.head.appendChild(style);
+              }
+            } else if (data.type === 'presence_pulse' || data.type === 'new_message') {
+              // Agent-initiated content (reminders, long-running tasks, …)
+              const content = data.content;
+              if (content) {
+                // [2026-03-18] Reminders: render as assistant “Reminder: …”, not as a fake user turn
+                const isReminderPulse = data.trigger === 'scheduled_reminder' || data.trigger === 'calendar_reminder' || (data.prompt && String(data.prompt).startsWith('[scheduled reminder]'));
+                if (isReminderPulse && data.prompt) {
+                  const taskName = String(data.prompt)
+                    .replace(/^\[scheduled reminder\]\s*/i, '')
+                    .replace(/^\[定时提醒\]\s*/, '')
+                    .trim() || 'Reminder';
+                  conversation.push({ role: 'assistant', content: `⏰ Reminder: ${taskName}.\n\n${content}` });
+                } else if (data.prompt) {
+                  conversation.push({ role: 'user', content: `[system] ${data.prompt}`, is_system_reminder: true });
+                  conversation.push({ role: 'assistant', content: content });
+                } else {
+                  conversation.push({ role: 'assistant', content: content });
+                }
+                renderHistory();
+                lastKnownHistoryLength = conversation.length;
+                chatStatus.textContent = '💬 Agent started a turn.';
+                chatStatus.style.color = '#059669';
+                chatStatus.style.fontWeight = '600';
+                
+                // Optional chime if the browser allows audio
+                try {
+                  const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQAA');
+                  audio.volume = 0.3;
+                  audio.play().catch(() => {});
+                } catch (e) {}
+                
+                // Clear status line after 5s
+                setTimeout(() => { 
+                  chatStatus.textContent = ''; 
+                  chatStatus.style.fontWeight = 'normal';
+                }, 5000);
+                
+                // RefreshInternal state
+                fetchSelfSummaryForMonitor();
+              }
+            } else if (data.type === 'state_update') {
+              // Always refresh compact summary — WS payloads may omit bars
+              fetchSelfSummaryForMonitor();
+            } else if (data.type === 'notification') {
+              // Toasts: reminders, tool progress, …
+              const content = data.content || 'Notification';
+              const isReminder = data.trigger === 'scheduled_reminder';
+              const isToolProgress = data.trigger === 'tool_progress';
+              // [2026-03-18] Tool progress: keep “Thinking” prefix so both can show
+              if (isToolProgress) {
+                chatStatus.innerHTML = `💭 <span style="animation: pulse 1.5s infinite;">Thinking</span> · 🔧 ${content}`;
+              } else {
+                chatStatus.textContent = isReminder ? `⏰ ${content}` : `ℹ️ ${content}`;
+              }
+              chatStatus.style.color = isReminder ? '#dc2626' : (isToolProgress ? '#0ea5e9' : '');
+              chatStatus.style.fontWeight = (isReminder || isToolProgress) ? '600' : 'normal';
+              if (isToolProgress && !document.getElementById('thinking-animation-style')) {
+                const style = document.createElement('style');
+                style.id = 'thinking-animation-style';
+                style.textContent = '@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }';
+                document.head.appendChild(style);
+              }
+              setTimeout(() => { chatStatus.textContent = ''; chatStatus.innerHTML = ''; chatStatus.style.color = ''; chatStatus.style.fontWeight = 'normal'; }, isReminder ? 15000 : (isToolProgress ? 8000 : 5000));
+              // [2026-03-18] Stream tool progress into the transcript
+              if (isToolProgress) {
+                conversation.push({ role: 'assistant', content: content, isProgress: true });
+                // Do not force-scroll: many progress lines would yank the viewport away from the answer
+                renderHistory({ skipAutoScroll: true });
+                lastKnownHistoryLength = conversation.length;
+              }
+              // Reminder: chime + append to history
+              else if (isReminder) {
+                try {
+                  const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQAA');
+                  audio.volume = 0.5;
+                  audio.play().catch(() => {});
+                } catch (e) {}
+                conversation.push({ role: 'assistant', content: `⏰ [scheduled reminder] ${content}` });
+                renderHistory();
+                lastKnownHistoryLength = conversation.length;
+              }
+              // Desktop notification (permission + background tab)
+              if (typeof Notification !== 'undefined') {
+                if (Notification.permission === 'granted') {
+                  new Notification(isReminder ? '⏰ Scheduled reminder' : 'Notification', { body: content });
+                } else if (Notification.permission === 'default') {
+                  Notification.requestPermission().then(p => {
+                    if (p === 'granted') new Notification(isReminder ? '⏰ Scheduled reminder' : 'Notification', { body: content });
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[WebSocket] Failed to parse message:', e);
+          }
+        };
+        
+        ws.onclose = (event) => {
+          console.log(`[WebSocket] Disconnected (code: ${event.code})`);
+          wsConnected = false;
+          updateWsStatus(false, '🟡 Reconnecting...');
+          
+          // Auto-reconnect with backoff
+          if (wsReconnectAttempts < WS_MAX_RECONNECT_ATTEMPTS) {
+            wsReconnectAttempts++;
+            const delay = WS_RECONNECT_DELAY * Math.min(wsReconnectAttempts, 5);
+            console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${wsReconnectAttempts})`);
+            wsReconnectTimer = setTimeout(connectWebSocket, delay);
+          } else {
+            console.warn('[WebSocket] Max reconnect attempts reached, falling back to polling');
+            updateWsStatus(false, '🔴 Polling fallback');
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error('[WebSocket] Error:', error);
+        };
+        
+      } catch (e) {
+        console.error('[WebSocket] Failed to create connection:', e);
+        updateWsStatus(false);
+      }
+    }
+    
+    // Reconnect WebSocket when session id changes
+    sessionInput.addEventListener('change', () => {
+      if (ws) {
+        ws.close();
+      }
+      if (wsReconnectTimer) {
+        clearTimeout(wsReconnectTimer);
+      }
+      wsReconnectAttempts = 0;
+      setTimeout(connectWebSocket, 500);
+    });
+    
+    // Connect WebSocket shortly after load
+    window.addEventListener('load', () => {
+      setTimeout(connectWebSocket, 1000);
+    });
+    
+    // ============================================
+    // Fallback: poll chat history when WebSocket is down
+    // ============================================
+    let lastKnownHistoryLength = 0;
+    let isFirstCheck = true;
+
+    async function checkForNewMessages() {
+      if (wsConnected) {
+        return;
+      }
+      
+      try {
+        const sid = sessionInput.value.trim() || 'selfing-session';
+        const data = await apiFetch(`/api/chat/history?sessionId=${encodeURIComponent(sid)}`);
+        
+        if (data.history && Array.isArray(data.history)) {
+          const currentLength = data.history.length;
+          
+          if (isFirstCheck) {
+            lastKnownHistoryLength = currentLength;
+            isFirstCheck = false;
+            return;
+          }
+          
+          if (currentLength > lastKnownHistoryLength && lastKnownHistoryLength > 0) {
+            const newMessagesCount = currentLength - lastKnownHistoryLength;
+            console.log(`[poll] ${newMessagesCount} new message(s)`);
+            
+            conversation.length = 0;
+            data.history.forEach(turn => {
+              conversation.push({ role: turn.role, content: turn.content, is_system_reminder: turn.is_system_reminder });
+            });
+            if (data.agent_name) agentDisplayName = data.agent_name;
+            renderHistory();
+            
+            chatStatus.textContent = `💬 The agent started a conversation (${newMessagesCount} new message(s)).`;
+            chatStatus.style.color = '#059669';
+            chatStatus.style.fontWeight = '600';
+            
+            setTimeout(() => { 
+              chatStatus.textContent = ''; 
+              chatStatus.style.fontWeight = 'normal';
+            }, 5000);
+            
+            fetchSelfSummaryForMonitor();
+          }
+          
+          lastKnownHistoryLength = currentLength;
+        }
+      } catch (err) {
+        console.warn('[poll] checkForNewMessages failed:', err);
+      }
+    }
+
+    // Poll every 30s as a safety net
+    setInterval(checkForNewMessages, 30000);
+
+    // First delayed poll after load
+    setTimeout(() => {
+      checkForNewMessages();
+    }, 5000);
+
+    // Soul monitor: refresh button + initial fetch (avoid stale placeholders)
+    if (btnRefreshSoulMonitor) {
+      btnRefreshSoulMonitor.addEventListener('click', () => fetchSelfSummaryForMonitor());
+    }
+    (function initSoulMonitor() {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => fetchSelfSummaryForMonitor());
+      } else {
+        fetchSelfSummaryForMonitor();
+      }
+    })();
+
+    // After the user sends, bump polling baseline so we do not false-positive “new” rows
+    chatForm.addEventListener('submit', () => {
+      setTimeout(() => {
+        lastKnownHistoryLength = conversation.length;
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+

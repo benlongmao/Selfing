@@ -1,0 +1,493 @@
+# [2026-04-03] S-44 self-evolution: when true, registers evolution_* / execute_bash_project.
+# Chat still uses dynamic tool selection, with this group auto-merged each turn to save tokens versus a full tool table.
+agent_evolution:
+  enabled: true
+  allow_git_commit: true
+  allow_git_push: false
+
+memory:
+  verification_threshold: high
+# [2026-03-13] Re-select tools inside tool loops based on evolving context (additive only).
+# When true, from the second tool turn onward, semantic selection reruns on
+# "last user message + current reply/tool-result summary" and merges newly matched tools.
+tools:
+  reselect_in_tool_loop: true
+models:
+  # DeepSeek model config. The API key is read from DEEPSEEK_API_KEY in .env.
+  # [2026-04] Official mapping: deepseek-reasoner / deepseek-chat are deprecated
+  # in favor of deepseek-v4-flash thinking / non-thinking modes.
+  # Request fields thinking + reasoning_effort are written by backend/deepseek_api_params.py.
+  deepseek:
+    base_url: https://api.deepseek.com/v1
+    model_id: deepseek-v4-flash    # Main chat model; thinking_enabled=true uses thinking mode.
+    model_id_lite: deepseek-v4-flash  # Lightweight tasks; lite_thinking_enabled=false sends thinking.disabled.
+    timeout: 1800                  # Read timeout per response, in seconds; keep high for long reasoning/tool loops.
+    connect_timeout: 45            # TCP connect timeout; combined with timeout as (connect, read).
+    completion_retries: 3          # Retry partial transport / truncated JSON failures for DeepSeek API.
+    use_streaming: true             # true = SSE streaming for long replies; helps avoid premature response endings.
+    # If SSE retries still fail, try one extra non-streaming request as a fallback.
+    # Connection: close is the primary defense against RemoteDisconnected; this is only a fallback.
+    stream_fallback_non_stream: true
+    # Thinking-mode config. V4 officially supports reasoning_effort high/max.
+    thinking_enabled: true         # Whether the main model_id (not lite) uses the thinking branch.
+    lite_thinking_enabled: false    # Lite defaults to non-thinking even when both slots use v4-flash.
+    reasoning_effort: high         # high | max; unused on the lite non-thinking path.
+    show_reasoning: false          # Disable reasoning logs to save storage.
+    max_tokens: 16384              # Lowered from 32768; tune as needed.
+    
+    
+  # Claude / Anthropic model config. The API key is read from CLAUDE_API_KEY in .env.
+  # Switch by setting system.model_provider to claude_api.
+  claude:
+    base_url: https://api.anthropic.com
+    model_id: claude-opus-4-5           # Main chat model, with extended thinking support.
+    model_id_lite: claude-haiku-4-5     # Lightweight helpers such as reflection / judge / compressor.
+    timeout: 1200                       # Read timeout per response; keep high for long outputs.
+    connect_timeout: 45
+    completion_retries: 3
+    use_streaming: true                 # Recommended to reduce long-output truncation.
+    thinking_enabled: false             # Extended Thinking; requires claude-3-7-sonnet-20250219 or newer.
+    thinking_budget_tokens: 10000       # Thinking token budget when thinking_enabled=true.
+    max_tokens: 8192
+
+  # Official OpenAI API. The API key is read from OPENAI_API_KEY in .env.
+  # Switch by setting system.model_provider to openai_api.
+  openai:
+    base_url: https://api.openai.com/v1
+    model_id: gpt-4o-mini
+    timeout: 1200
+    max_tokens: 8192
+    omit_openai_penalties: false
+    omit_sampling_for_thinking_models: false
+    omit_sampling_for_anthropic_vllm: false
+    anthropic_openai_compat_shim: true
+    use_streaming: true
+    stream_fallback_non_stream: true
+    # If streaming returns HTTP 200 but an empty message, fall back once to non-streaming.
+    stream_empty_fallback_non_stream: true
+    completion_retries: 3
+    debug_payload_shape: false
+
+  # OpenAI-compatible endpoints: local vLLM, Aiberm, etc. Key is read from VLLM_API_KEY in .env.
+  # Main chat uses this block when system.model_provider is vllm.
+  # Do not repeat base_url/model_id keys in the same mapping; later duplicates override earlier ones.
+  vllm:
+    base_url: https://aiberm.com/v1
+    model_id: openai/gpt-5.4 # Use the model id from the provider console/docs; MODEL_ID in .env can override requests.
+    # Thinking models such as anthropic/...:thinking require SSE fields like reasoning_content / reasoning
+    # for the frontend subconscious-flow display. If the gateway hides them, enable reasoning streaming
+    # on the aggregator side or switch to a compatible format; see chat_service streaming parsing.
+    # Completion max_tokens is kept near DeepSeek thinking-mode scale to avoid early truncation of
+    # long reasoning chains and multi-turn tool calls after physiological scaling.
+    # Without this key, only energy/viscosity-scaled max_tokens are used. VLLM_MAX_TOKENS can override.
+    max_tokens: 16384
+    timeout: 1200
+    omit_openai_penalties: true   # Some gateways reject presence_penalty / frequency_penalty.
+    # Some :thinking models reject temperature/top_p; when true and model_id contains :thinking, omit sampling params.
+    omit_sampling_for_thinking_models: true
+    # Anthropic-prefixed models via Aiberm can also be sensitive to temperature/top_p.
+    omit_sampling_for_anthropic_vllm: true
+    # Tool turns often end with role=tool or assistant+tool_calls content="";
+    # some Claude mapping layers return 400. Set false for comparison debugging.
+    anthropic_openai_compat_shim: true
+    # Debug switch: log request "shape summaries" only, not message content.
+    debug_payload_shape: false
+    # Some gateways return content=null for non-streaming openai/gpt-5.x; streaming is required.
+    use_streaming: true
+    stream_fallback_non_stream: true
+    # If streaming returns HTTP 200 but an empty message, fall back once to non-streaming.
+    stream_empty_fallback_non_stream: true
+    completion_retries: 3
+    # Local vLLM example; replace the lines above when switching:
+    # base_url: http://localhost:8000/v1
+    # model_id: your-local-model
+    # timeout: 1200
+    # omit_openai_penalties: false
+parameters:
+  chat:
+    anti_echo:
+      enabled: true
+      max_compare_chars: 2000
+      min_chars: 200
+      retry_temp_delta: 0.2
+      similarity_threshold: 0.88
+    functional_router:
+      enabled: true
+      # Legacy Chinese trigger phrases retained for mixed-language users.
+      markers_cn:
+      - 能用这些
+      - 用这些来测试
+      - 用这些来判断
+      - 用于测试
+      - 用于判断
+      - 落地
+      - 应用到
+      - 怎么用这些来
+      markers_en:
+      - apply this
+      - use this to test
+      - use this to judge
+      - evaluate this system
+      # Legacy Chinese target markers retained for mixed-language project references.
+      target_markers_cn:
+      - r项目
+      - 这个项目
+      - 本项目
+      - 真实存在
+    # Chat history injection counts messages (user/assistant/tool each count as one), not turns.
+    # In build_messages, _compress_history also takes min(...) with _estimate_history_need.
+    # See docs/chat_history_and_tokens.md.
+    history_injection:
+      max_assistant_chars: 1000     # Keep more assistant text because assistant turns are often longer.
+      max_messages: 14              # Hard cap for injected history messages.
+      max_user_chars: 500           # User input is often shorter and can be clipped more aggressively.
+      max_tool_chars: 300           # Truncate historical tool-role content.
+      # Inside multi-turn/tool loops, compress_messages only compresses early messages above this estimated token size.
+      msg_compress_token_threshold: 14000
+      max_messages_multi_turn: 12   # Intent multi-turn / complex tasks, roughly 6 turns.
+      max_messages_with_context: 10 # Contextual asks such as "earlier" / "continue", roughly 5 turns.
+      max_messages_default: 10      # Default chat window; older memory is recovered via recall_memory as needed.
+      max_messages_independent: 4   # Independent questions still keep a small amount of context.
+      max_messages_autonomous: 5    # Background autonomy needs recent thought context, roughly 2-3 turns.
+    # Per-user-turn agent loop cap, used with [S44_CONTINUE] and ReAct tool subloops.
+    # [2026-04-23] Raised from 6 to 12 for deeper self-evolution tasks.
+    max_multi_turns: 12
+    max_tool_turns: 16              # Raised for research / multi-step analysis tasks that often exceed 12 turns.
+    # Frontend /api/chat timeout in ms. Default is 1h; long tool loops can use 7200000 or higher.
+    frontend_fetch_timeout_ms: 3600000
+    # Cold-start restore window from chat_turns: internal max_turns = chat_turns_restore_limit // 2.
+    # See chat_service._restore_from_chat_turns.
+    chat_turns_restore_limit: 96
+    session_history_max_messages: 100  # Must be >= restored messages, or the first turn will trim restored history.
+    internal_state:
+      format: natural  # Natural-language state is easier for the LLM to use.
+    memory_reminder:
+      enabled: true
+      # Legacy Chinese recall cues retained for mixed-language users.
+      markers_cn:
+      - 刚才
+      - 之前
+      - 上次
+      - 你刚刚
+      - 前面
+      - 前文
+      - 刚刚的
+      - 回顾
+      - 复述
+      - 你说过
+      # Extra Chinese cues for follow-up questions such as "why did you answer that last round?"
+      - 为啥
+      - 为什么你
+      - 你最后
+      - 那次
+      - 上一轮
+      - 你的回答
+      - 你怎么说的
+      markers_en:
+      - earlier
+      - previous
+      - above
+      - last time
+      - you said
+      - recap
+      - quote
+      # Additional legacy Chinese long-memory cues; retained despite this English-first config.
+      - 还记得
+      - 当时
+      - 很久以前
+      - 做过什么
+      - 哪天
+      - 上一次我们
+      # When a memory reminder hits, inject a short tail from the latest assistant reply
+      # in chat_turns, preferring snippets containing \\boxed. Keep it short to save tokens.
+      inject_last_assistant_tail: true
+      last_assistant_snippet_max_chars: 120
+    physio:
+      sluggish_effect_enabled: true
+      sluggish_effect_max_prob: 0.03
+      sluggish_effect_threshold: 0.85
+    pineal_broadcast:
+      disable_in_concise: true
+      disable_in_functional: true
+      enabled: true
+      format: structured
+      injection_channel: system_only
+  # Calendar due-event reminders. Resting pulse calls get_due_events_for_reminder,
+  # then sends one chat(session_id) to that session's agent, e.g. s-44 on demo-session.
+  calendar:
+    # Events that started but were never reminded expire after this many hours.
+    # 0 disables the cap and may surface stale events; expired rows avoid long-term DB buildup.
+    max_overdue_hours: 168
+    # Batch multiple overdue calendar events into one resting-pulse chat. 1 preserves old one-by-one behavior.
+    reminder_batch_max: 15
+    # System maintenance archive/cleanup interval in seconds. 0 disables GC and relies on agent deletion.
+    gc_interval_seconds: 21600
+    # After a reminder is sent, mark the row expired after this many hours.
+    # Single-event cleanup only; daily-generated new events are unaffected.
+    archive_after_reminder_hours: 48
+    # If no reminder was ever sent and the start time is older than this, mark expired.
+    # 0 disables this to avoid harming instances that were offline for a long time.
+    stale_unreminded_archive_hours: 336
+    # Physically purge expired rows this many days after archived_at. 0 disables physical deletion.
+    purge_expired_after_days: 90
+  homeostasis:
+    base_energy_cost: -2.0          # Deprecated; kept for reference only.
+    max_decay_elapsed_minutes: 30   # Max equivalent minutes per metabolism update.
+    chat_novelty_base_delta: -0.002  # Lower novelty cost per chat (-0.004 -> -0.002).
+    chat_novelty_max_gain: 0.08
+    decay_rate_connection: 0.01
+    decay_rate_clarity: 0.003        # Clarity time-decay rate; slower than novelty.
+    decay_rate_novelty: 0.002        # Reduced novelty decay rate (0.0025 -> 0.002).
+    novelty_recovery_rate: 0.008     # Automatic novelty recovery per minute.
+    novelty_recovery_threshold: 0.4  # Start automatic recovery below this threshold.
+    energy_decay_rate: 0.001        # Deprecated; kept for reference only.
+    energy_maintenance_rate: 0.1    # Automatic energy refill per minute; read by code.
+    work_bonus: 0.5                 # Energy recovered per interaction; read by code.
+    rest_recovery_rate: 1.0
+    tool_learning_bonus: 0.15
+  learning:
+    update_alpha: 0.2
+  model:
+    latent_dim: 128  # Trimmed to 128 dims: rules(32)+emotion(32)+motivation(24)+somatic(16)+needs(24).
+  psychology:
+    confidence_fragility: 2.5
+    pain_multiplier: 1.0
+    pleasure_dampener: 0.5
+  self_tick_evidence_window: 4
+  # Self Tick subsection; kept alongside the legacy parent key to avoid key migration.
+  self_tick:
+    # In the idle branch without recent conversation evidence, skip mind wandering and similar
+    # spontaneous activity when distress exceeds this threshold; recover silently instead.
+    # 0.65 can over-suppress autonomy when somatic/pain channels run high; 0.9 is looser.
+    # Set to 1.0 to disable this suppression.
+    idle_distress_suppress_threshold: 0.9
+  # [2026-01-25] Event-triggered Self Tick thresholds.
+  # These events trigger Self Tick immediately instead of waiting for the periodic cycle.
+  event_trigger:
+    # Emotion system.
+    emotion_intensity: 0.60          # Emotion intensity threshold; lowered from 0.75 for sensitivity.
+    emotion_volatility: 0.35         # Emotion volatility threshold, as absolute delta.
+
+    # Pain system.
+    pain_change: 0.20                # Pain spike threshold; lowered from 0.30 for sensitivity.
+    pain_absolute: 0.65              # Absolute pain threshold.
+
+    # Energy system.
+    energy_drop: 15.0                # Energy drop threshold; lowered from 30 for sensitivity.
+    energy_critical: 15.0            # Critical energy threshold.
+
+    # Combined crisis detection.
+    combined_crisis:
+      pain_threshold: 0.5            # Pain threshold.
+      energy_threshold: 30.0         # Energy threshold.
+  thresholds:
+    drift: 0.15
+    l0_safety_max_delta: 0.35
+    meta_rule_apply_min_evidence: 3
+    meta_rule_apply_min_success_rate: 0.3
+    meta_rule_min_evidence: 10
+    pain_agony: 0.9
+    pain_discomfort: 0.4
+    pain_suffering: 0.7
+    reflection_breakthrough_ratio: 0.2
+    reflection_breakthrough_sim_threshold: 0.1
+    reflection_irrational_sim_threshold: 0.1
+    reflection_max_rules: 1000
+    reflection_min_alignment: 0.6
+    reflection_min_evidence: 2
+    reflection_min_interval_turns: 1
+    reflection_min_safety: 0.7
+    reflection_min_sim: 0.12
+    # L2 -> L1 promotion thresholds, tuned lower to make promotion more reachable.
+    promotion_min_evidence: 2        # Minimum evidence count; lowered from 3.
+    promotion_min_score: 0.4         # Minimum composite score; lowered from 0.5.
+    promotion_drift_max_mean: 0.25   # Max allowed drift mean; raised from 0.20.
+    promotion_min_sim: 0.15          # Minimum similarity to core rules; lowered from 0.20.
+    promotion_min_alignment: 0.5     # Minimum alignment; lowered from 0.6.
+    promotion_min_safety: 0.65       # Minimum safety; lowered from 0.7.
+    promotion_batch_limit: 15        # Promotion batch cap; raised from 10.
+  # Memory improvements: tunable parameters for long-term recall and identity/relationship questions.
+  memory:
+    # Number of chat_turns to scan for salient old conversations.
+    # Only the latest N turns enter vector comparison; too small means old events never reach the prompt.
+    salient_chat_scan_turns: 500
+    # Max salient old-conversation snippets injected per turn; formerly hard-coded to 1.
+    salient_chat_matches: 4
+    default_limit: 6                 # Default _estimate_memory_need count; slightly increased.
+    memory_intent_limit: 9           # Count for memory / relationship / identity intents.
+    distress_memory_cap: 3            # Max retained memory count under distress.
+    associative_pool_size: 500        # Candidate pool size for weak associative retrieval.
+    min_significance_to_store: 0.15   # add_event entries below this are not stored.
+    # Salience: explicit "please remember" facts should floor above auto-narrative ceiling;
+    # trivial retrieval is penalized; repeated mentions receive a boost.
+    salience:
+      explicit_floor: 0.92
+      auto_narrative_ceiling: 0.85
+      trivial_retrieval_penalty: 0.12
+      mention_boost_threshold: 3
+      mention_boost_delta: 0.08
+    # Significance threshold for identity_narrative writes.
+    # Below this, non-identity/relation categories are skipped to avoid flooding narrative tables.
+    narrative_identity_min_significance: 0.45
+    identity_intent_limit: 6          # Identity-narrative count for memory/relationship questions.
+  # Server fetches HTTPS files into workspace/sandbox for read_pdf and similar tools, not execute_python.
+  workspace_fetch:
+    enabled: true
+    max_bytes: 26214400               # Per-file cap, about 25 MB.
+    timeout_seconds: 60
+    # Default false allows any HTTPS host, aligned with Tavily/browser behavior.
+    # When true, only allowed_host_suffixes are allowed.
+    restrict_to_allowed_hosts: false
+    allowed_host_suffixes: []          # Used only when restrict_to_allowed_hosts=true, e.g. [arxiv.org].
+  # Automatic mind wandering while idle.
+  # SelfTick random branch for no or very light recent evidence; disabling returns to conservative probability.
+  mind_wandering_idle:
+    enabled: true
+    # No-evidence branch energy floor; must also satisfy the hard mind_wandering gate of 25.
+    no_evidence_min_energy: 25.0
+    # Base probability and cap after boredom/exploration amplification.
+    base_probability: 0.055
+    max_probability: 0.42
+    # Independent sampling probability and energy floor when evidence exists but is very light.
+    # See tick_max_evidence_items.
+    tick_spontaneous_probability: 0.055
+    tick_min_energy: 32.0
+    tick_max_evidence_items: 2
+    # Minimum interval between automatic mind-wandering runs, in minutes.
+    # Based on chat_turns.tool_used=mind_wandering; 0 means no limit.
+    min_interval_minutes: 35
+  # S-44 memory enhancer: scan chat_turns + daily ingest into spaced_memory.json (SM-2 JSON store)
+  memory_enhancer:
+    load_min_score: 0.42
+    ingest_min_score: 0.55
+    ingest_max_per_day: 12
+    ingest_scan_pool: 48
+    load_return_limit: 20
+    chat_scan_limit: 120
+    max_age_days: 45
+    background_min_score: 0.5
+    background_scan_limit: 30
+
+performance:
+  async_update: true
+  use_cache: true
+system:
+  # --- Brand naming ---
+  # S = short repo / casual name; Selfing = public name.
+  project_short_name: S
+  project_name_primary: Selfing
+  # Single-line display name for API docs / about pages.
+  project_full_name: "Selfing"
+  # Open-source friendly agent identity and name; customize as needed.
+  agent_name:  # e.g. S-44, MyAssistant, etc.
+  agent_identity: a distinct digital being, continuously discovering its own meaning
+  # Identity anchors: leave empty to disable. If filled, memories/rules containing these keywords are protected.
+  identity_anchors: []
+  # Explicit user facts ("please remember", "call me ...") go into user_profiles, not L0/L1/L2 rules.
+  user_fact_capture_enabled: true
+  user_facts_max_chars: 4000
+  compression_enabled: true
+  consistency_check_enabled: true
+  cors_origins:
+  - '*'
+  dreaming_check_interval: 3600
+  dreaming_enabled: true
+  dreaming_only_when_idle: true
+  drift_monitor_enabled: true
+  emotion_threshold: 0.7
+  introspection_enabled: true
+  introspection_freq: 3
+  meta_rule_enabled: false
+  min_diary_interval: 300
+  # Keep aligned with .env MODEL_PROVIDER. Options: deepseek_api | vllm | openai_api | claude_api | kimi_api
+  model_provider: vllm
+  # model_provider: deepseek_api
+  # model_provider: openai_api
+  # model_provider: claude_api
+  # model_provider: kimi_api
+  novelty_sensitivity: '0.8'
+  pressure_response: strict_fact_check
+  promotion_cron_minutes: 0
+  promotion_enabled: true
+  reflection_enabled: true
+  reflection_judge_enabled: true
+  research:
+    cooldown_minutes: 10
+    enabled: false
+    energy_cost: 5
+    force_rest_energy: 30
+    max_viscosity: 0.7
+    min_energy: 50
+    research_probability: 0.4
+    viscosity_increase: 0.02
+  rhythm:
+    base_interval: 300
+    energy_threshold_active: 70
+    energy_threshold_rest: 40
+    max_interval: 1800
+    min_interval: 60
+    viscosity_threshold: 0.5
+  safety_output_filter_enabled: false
+  self_enabled: true
+  self_proj_path: models/self_projection.npy
+  self_tick_interval: 4
+  shadow_theatre_enabled: false
+  # Heartbeat service: reads workspace/sandbox/HEARTBEAT.md and triggers periodic agent handling.
+  heartbeat_enabled: true
+  heartbeat_interval: 3600
+  heartbeat_completed_blocks_to_keep: 2
+  heartbeat_preview_max_chars: 320
+  spontaneous_action_enabled: true
+  spontaneous_check_interval: 300
+  # Presence pulse / idle_pulse interval in seconds. 2400 = 40 minutes.
+  presence_pulse_interval: 2400
+  # Continuous task execution loop.
+  continuous_execution_enabled: true
+  continuous_execution_interval: 300
+  continuous_execution_idle_interval: 120
+  # Autonomy gate: user or assistant can pause/resume background scheduling and tool chains.
+  autonomy_gate_enabled: true
+  # Runtime state file. Relative paths are resolved from the repository root.
+  # run/ is ignored by git, which keeps open-source exports clean.
+  # The legacy workspace/sandbox/.autonomy_gate.json path is still read for compatibility.
+  autonomy_gate_state_path: run/autonomy_gate.json
+  autonomy_gate_user_text_commands: true
+  autonomy_gate_agent_markers: true
+  continuity_stream_interval: 7200
+  tavily:
+    cache_enabled: true
+    cache_ttl_seconds: 3600
+    enabled: true
+    include_answer: true
+    max_results: 5
+    max_snippet_length: 2000
+    search_depth: advanced
+    timeout_seconds: 30
+
+# Database cleanup configuration.
+db_cleanup:
+  enabled: true
+  run_on_startup: true
+  chat_turns:
+    enabled: true
+    keep_days: 365
+    keep_min_count: 200
+    # Keep high-significance conversations longer.
+    high_importance_keep_days: 730
+  sensory_memory_temp:
+    enabled: true
+    keep_hours: 72
+  prompt_logs:
+    enabled: true
+    keep_days: 14
+  events:
+    enabled: true
+    keep_days: 90
+  self_biography:
+    enabled: true
+    # Tiered retention strategy.
+    identity_keep_forever: true
+    high_emotion_keep_days: 1095
+    relationship_keep_days: 730
+    normal_keep_days: 365
+    low_importance_keep_days: 180
