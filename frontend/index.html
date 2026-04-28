@@ -1197,6 +1197,21 @@
                   data.internal_state_compact,
                   Object.prototype.hasOwnProperty.call(data, 'internal_state_compact')
                 );
+                const rawDrift = (typeof data.summary.drift === 'number' && Number.isFinite(data.summary.drift))
+                  ? data.summary.drift
+                  : null;
+                const displayDrift =
+                  (typeof data.summary.drift_display === 'number' && Number.isFinite(data.summary.drift_display))
+                    ? data.summary.drift_display
+                    : ((typeof data.summary.state_activity === 'number' && Number.isFinite(data.summary.state_activity))
+                      ? data.summary.state_activity
+                      : null);
+                const liveDrift = rawDrift !== null && Math.abs(rawDrift) > 1e-9
+                  ? rawDrift
+                  : (displayDrift ?? rawDrift);
+                if (typeof liveDrift === 'number' && statDrift) {
+                  statDrift.textContent = liveDrift.toFixed(6);
+                }
             } else if (monitorZsCompact) {
                 monitorZsCompact.textContent =
                   '(No summary: session may lack self_state yet — send a message or initialize z_self.)';

@@ -265,17 +265,6 @@ def get_self_state(sessionId: str):
 
         drift_display = effective_drift
         if isinstance(self_summary, dict):
-            try:
-                dd = self_summary.get("drift_display")
-                if dd is not None:
-                    drift_display = float(dd)
-            except (TypeError, ValueError):
-                pass
-            try:
-                if abs(drift_display) < 1e-9 and self_summary.get("state_activity") is not None:
-                    drift_display = float(self_summary.get("state_activity"))
-            except (TypeError, ValueError):
-                pass
             if self_summary.get("state_activity") is None:
                 self_summary = dict(self_summary)
                 self_summary["state_activity"] = state_activity
