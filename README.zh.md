@@ -1,6 +1,5 @@
 # Selfing
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
 > 大多数 AI 框架让模型去做事。Selfing 想问：什么条件可能让一个模型实例持续存在？
 
@@ -421,4 +420,4 @@ Selfing 不关闭这个问题。
 
 ## License
 
-MIT License. See [`LICENSE`](LICENSE).
+代码采用 Apache License 2.0 许可。除非另有说明，文档和项目记录采用 CC BY-SA 4.0 许可。
