@@ -421,4 +421,4 @@ It makes the question executable.
 
 ## License
 
-MIT License. See [`LICENSE`](LICENSE).
+Code is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
