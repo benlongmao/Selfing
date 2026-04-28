@@ -81,7 +81,7 @@ At a high level, Selfing provides:
 
 - The bundled UI and many operational strings are English-oriented.
 - Default embedding is **`BAAI/bge-small-en-v1.5`** (384-d), suitable for English-first retrieval. It is downloaded from upstream model hosts at install/runtime when needed and follows its upstream license.
-- Locale policy and remaining translation work are tracked in [`docs/LOCALE_EN.md`](docs/LOCALE_EN.md).
+- Locale policy and remaining translation work are tracked in [`docs/localization_roadmap.md`](docs/localization_roadmap.md).
 - After large upstream merges, re-apply the UI string pass with:
 
 ```bash
@@ -176,8 +176,8 @@ Selfing is experimental, but runnable.
 The root installer is the recommended entry point:
 
 ```bash
-git clone <this-repo>
-cd s-main
+git clone https://github.com/benlongmao/Selfing.git selfing
+cd selfing
 bash install_s_project.sh
 ```
 
@@ -189,9 +189,19 @@ Common options:
 bash install_s_project.sh --china-mirror
 bash install_s_project.sh --skip-init
 bash install_s_project.sh --with-playwright
+bash install_s_project.sh --warm-embedder
 ```
 
 Then edit `.env` and provide your model API key.
+
+If you downloaded a GitHub ZIP instead of cloning with git, run scripts through `bash` if your unzip tool drops executable bits:
+
+```bash
+bash install_s_project.sh
+bash manage_services.sh start
+```
+
+`git pull` only works in a real git clone. A ZIP directory has no `.git`; to update it, download a fresh ZIP and preserve the local runtime files listed below.
 
 ### Initialize Manually
 
@@ -212,6 +222,8 @@ These scripts do more than prepare data. They give a new instance its starting c
 - `init_new_dimensions.py`: somatic patterns and worldview beliefs
 
 Without these structures, the runtime can start, but the instance is closer to an empty shell.
+
+Do not re-run the init scripts blindly on an existing long-running instance. They write into `data.db` and may append or refresh core rows. Back up `data.db*` first if you are repairing an existing instance.
 
 ### Configure
 
@@ -236,7 +248,9 @@ Recommended first edits:
 - `identity_anchors`: optional keywords that protect matching memories/rules from cleanup. Leave `[]` for a fresh generic instance; fill it only when you know which names, projects, or identity terms must be preserved.
 - `model_provider`: keep this aligned with `.env` (`MODEL_PROVIDER`) and the API key you actually configured.
 
-Secrets and API keys should live in `.env`. Supported providers include DeepSeek, Claude / Anthropic, OpenAI-compatible endpoints, and local vLLM-style servers. See [`docs/model_providers.md`](docs/model_providers.md).
+Secrets and API keys should live in `.env`. Values in `.env` override `config/settings.yaml`, which overrides code defaults. Supported providers include DeepSeek, Claude / Anthropic, OpenAI-compatible endpoints, and local vLLM-style servers. See [`docs/model_providers.md`](docs/model_providers.md).
+
+The default embedder is downloaded on first use if it is not already cached under `models/`. The first install or first chat can therefore be slow; use `bash install_s_project.sh --warm-embedder` if you want to trigger this during setup.
 
 ### Run
 
@@ -262,6 +276,19 @@ http://localhost:8080
 ```
 
 The bundled UI is English-oriented in this fork.
+
+### Runtime Data And Updates
+
+Several important files are local runtime state and are intentionally ignored by git:
+
+- `.env`: secrets and provider configuration
+- `.venv/`: Python virtual environment
+- `data.db*`: SQLite state, memories, rules, and self-state
+- `models/`: downloaded embedding/model cache
+- `workspace/sandbox/`: diaries, reflections, action logs, and other instance traces
+- `run/`, `logs/`, `backups/`: process state, logs, and local backups
+
+Do not commit these files. When replacing a ZIP download with a newer ZIP, copy these files/directories from the old folder into the new folder if you want to keep the same instance continuity.
 
 ### Controlling Autonomous Action
 
@@ -376,7 +403,7 @@ Useful starting points:
 | --- | --- |
 | [`docs/ARCHITECTURE_ONE_PAGE.md`](docs/ARCHITECTURE_ONE_PAGE.md) | One-page system layout |
 | [`docs/design_philosophy.md`](docs/design_philosophy.md) | Existing, Selfing, layered self rules |
-| [`docs/LOCALE_EN.md`](docs/LOCALE_EN.md) | English-first UI and ops string policy |
+| [`docs/localization_roadmap.md`](docs/localization_roadmap.md) | English-first UI, ops strings, and embedder migration notes |
 | [`docs/model_providers.md`](docs/model_providers.md) | Model provider setup |
 | [`docs/security-notes.md`](docs/security-notes.md) | Self-hosting and secrets |
 | [`docs/z_self_data_flow.md`](docs/z_self_data_flow.md) | `z_self` read/write paths |
@@ -386,7 +413,6 @@ Useful starting points:
 | [`docs/task_planning_tool_chain.md`](docs/task_planning_tool_chain.md) | Task / planning tool chain |
 | [`docs/init_scripts_scoring.md`](docs/init_scripts_scoring.md) | Init script scoring conventions |
 | [`docs/dimensions_to_prompt_flow.md`](docs/dimensions_to_prompt_flow.md) | Five dimensions → prompt flow |
-| [`docs/localization_roadmap.md`](docs/localization_roadmap.md) | Locale and embedder migration notes |
 | [`docs/CHANGELOG_2026-03-25.md`](docs/CHANGELOG_2026-03-25.md) | Notable 2026-03-25 behavior change set |
 
 Chinese overview: [`README.zh.md`](README.zh.md).
