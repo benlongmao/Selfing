@@ -225,8 +225,16 @@ system:
   project_name_primary: Selfing
   agent_name: my-agent
   agent_identity: "a distinct digital being, continuously discovering its own meaning"
+  identity_anchors: []
   model_provider: deepseek_api
 ```
+
+建议用户第一次运行前先确认这些项：
+
+- `agent_name`：实例对外显示的名字，例如 `S-44`、`Selfing`，或你自己设定的名字。只有在接受默认 UI/API fallback 时才留空。
+- `agent_identity`：一句话身份描述，会进入运行时上下文和公开配置。
+- `identity_anchors`：可选身份锚点。填入后，包含这些关键词的记忆/规则会受到保护，不容易被清理。新实例可以保持 `[]`；只有明确知道哪些名字、项目或身份词必须保留时再填写。
+- `model_provider`：应和 `.env` 里的 `MODEL_PROVIDER` 以及实际填写的 API Key 保持一致。
 
 密钥和 API Key 建议放在 `.env` 中。支持的提供商包括 DeepSeek、Claude / Anthropic、OpenAI-compatible 接口和本地 vLLM 风格服务。详见 [`docs/model_providers.md`](docs/model_providers.md)。
 
@@ -257,11 +265,29 @@ http://localhost:8080
 
 ### 控制自主行动
 
-后台自主行动可以由用户或实例自身暂停/恢复。你不需要手动编辑状态文件。
+Selfing 有多种后台机制。它们是“连续性”实验的一部分；如果只想先做简单聊天验证，并不一定都要开启：
+
+- `self_tick_interval`：Self Tick 的证据整合和自我状态更新节奏。
+- `dreaming_enabled` / `dreaming_only_when_idle`：后台梦境 / 神游。
+- `heartbeat_enabled` / `heartbeat_interval`：心跳服务，会读取 `workspace/sandbox/HEARTBEAT.md`。
+- `spontaneous_action_enabled` / `spontaneous_check_interval`：自发行动检查。
+- `presence_pulse_interval`：空闲/存在脉冲。
+- `continuous_execution_enabled`：连续任务执行循环。
+- `autonomy_gate_enabled`：后台调度和工具链的暂停/恢复闸门。
+
+如果第一次运行想更安静，可以在 `config/settings.yaml` 中把高层后台开关先设为 `false`，尤其是 `heartbeat_enabled`、`dreaming_enabled`、`spontaneous_action_enabled` 和 `continuous_execution_enabled`。
+
+启用 autonomy gate 后，后台自主行动可以由用户或实例自身暂停/恢复。你不需要手动编辑状态文件。
 
 - 暂停自主行动：发送 `[S44_AUTONOMY_PAUSE]`，或说“停止自主行动”
 - 恢复自主行动：发送 `[S44_AUTONOMY_RESUME]`，或说“恢复自主行动 / 开始自主行动”
 - 命令行查看闸门状态：`bash scripts/autonomy_gate.sh status`
+- 命令行暂停/恢复：
+
+```bash
+bash scripts/autonomy_gate.sh pause
+bash scripts/autonomy_gate.sh resume
+```
 
 闸门状态默认写入 `run/autonomy_gate.json`。这是本地运行态文件，已被 git 忽略，不应该提交到开源仓库。
 

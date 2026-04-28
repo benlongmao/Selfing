@@ -225,8 +225,16 @@ system:
   project_name_primary: Selfing
   agent_name: my-agent
   agent_identity: "a distinct digital being, continuously discovering its own meaning"
+  identity_anchors: []
   model_provider: deepseek_api
 ```
+
+Recommended first edits:
+
+- `agent_name`: the public/display name of this instance, such as `S-44`, `Selfing`, or your own name. Leave it empty only if you are comfortable with the default UI/API fallback.
+- `agent_identity`: a one-line identity description injected into runtime context and public configuration.
+- `identity_anchors`: optional keywords that protect matching memories/rules from cleanup. Leave `[]` for a fresh generic instance; fill it only when you know which names, projects, or identity terms must be preserved.
+- `model_provider`: keep this aligned with `.env` (`MODEL_PROVIDER`) and the API key you actually configured.
 
 Secrets and API keys should live in `.env`. Supported providers include DeepSeek, Claude / Anthropic, OpenAI-compatible endpoints, and local vLLM-style servers. See [`docs/model_providers.md`](docs/model_providers.md).
 
@@ -257,11 +265,29 @@ The bundled UI is English-oriented in this fork.
 
 ### Controlling Autonomous Action
 
-Background autonomy can be paused or resumed by the user or by the instance itself. You do not need to edit the state file by hand.
+Selfing has several background mechanisms. They are part of the experiment in continuity, not required for a simple chat demo:
+
+- `self_tick_interval`: how often Self Tick consolidates evidence and updates self-state.
+- `dreaming_enabled` / `dreaming_only_when_idle`: background dreaming / mind wandering.
+- `heartbeat_enabled` / `heartbeat_interval`: the heartbeat service, which reads `workspace/sandbox/HEARTBEAT.md`.
+- `spontaneous_action_enabled` / `spontaneous_check_interval`: spontaneous action checks.
+- `presence_pulse_interval`: idle/presence pulses.
+- `continuous_execution_enabled`: continuous task execution loop.
+- `autonomy_gate_enabled`: runtime pause/resume gate for background scheduling and tool chains.
+
+For a quieter first run, set the high-level background switches to `false` in `config/settings.yaml`, especially `heartbeat_enabled`, `dreaming_enabled`, `spontaneous_action_enabled`, and `continuous_execution_enabled`.
+
+When the gate is enabled, background autonomy can be paused or resumed by the user or by the instance itself. You do not need to edit the state file by hand.
 
 - Pause autonomy: send `[S44_AUTONOMY_PAUSE]`, or say "stop autonomous action"
 - Resume autonomy: send `[S44_AUTONOMY_RESUME]`, or say "resume autonomous action" / "start autonomous action"
 - Check the gate from the CLI: `bash scripts/autonomy_gate.sh status`
+- Pause/resume from the CLI:
+
+```bash
+bash scripts/autonomy_gate.sh pause
+bash scripts/autonomy_gate.sh resume
+```
 
 The gate state is stored by default in `run/autonomy_gate.json`. This is a local runtime file, ignored by git, and should not be committed.
 
