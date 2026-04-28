@@ -1,5 +1,6 @@
 # Selfing
 
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
 > 大多数 AI 框架让模型去做事。Selfing 想问：什么条件可能让一个模型实例持续存在？
 

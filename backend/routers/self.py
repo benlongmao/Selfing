@@ -253,6 +253,38 @@ def get_self_state(sessionId: str):
             except Exception:
                 pass
 
+        state_activity = 0.0
+        try:
+            z_vals = data.get("z_self") if isinstance(data.get("z_self"), list) else []
+            state_tail = [float(v) for v in z_vals[32:] if isinstance(v, (int, float))]
+            if state_tail:
+                norm = math.sqrt(sum(v * v for v in state_tail))
+                state_activity = max(0.0, min(1.0, norm / (math.sqrt(len(state_tail)) + 1e-8)))
+        except Exception:
+            state_activity = 0.0
+
+        drift_display = effective_drift
+        if isinstance(self_summary, dict):
+            try:
+                dd = self_summary.get("drift_display")
+                if dd is not None:
+                    drift_display = float(dd)
+            except (TypeError, ValueError):
+                pass
+            try:
+                if abs(drift_display) < 1e-9 and self_summary.get("state_activity") is not None:
+                    drift_display = float(self_summary.get("state_activity"))
+            except (TypeError, ValueError):
+                pass
+            if self_summary.get("state_activity") is None:
+                self_summary = dict(self_summary)
+                self_summary["state_activity"] = state_activity
+        if abs(drift_display) < 1e-9 and state_activity > 1e-9:
+            drift_display = state_activity
+        if isinstance(self_summary, dict):
+            self_summary = dict(self_summary)
+            self_summary["drift_display"] = drift_display
+
         result = {
             "sessionId": data["session_id"],
             "zSelf": data["z_self"],
@@ -260,6 +292,8 @@ def get_self_state(sessionId: str):
             "limits": data["limits"],
             "tick": data["tick"],
             "drift": effective_drift,
+            "driftDisplay": drift_display,
+            "stateActivity": state_activity,
             "calibrationECE": data["calibration_ece"],
             "selfSummary": self_summary,
             "updatedAt": data["updated_at"],

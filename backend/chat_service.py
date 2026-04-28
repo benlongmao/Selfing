@@ -1188,7 +1188,6 @@ class ChatService:
                     if last_msg.get("role") == "assistant":
                         last_content = last_msg.get("content", "")
                         # Embedder cosine similarity
-                        from backend.embedder import get_embedder
                         embedder = get_embedder()
                         v1 = embedder.encode(user_input)
                         v2 = embedder.encode(last_content)
@@ -2986,32 +2985,32 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                             f"last_tick={last_tick_turn}, turns_since={turns_since_last_tick}, "
                             f"dynamic_interval={dynamic_interval:.1f} ({interval_reason})"
                         )
-                    self_tick_result = self.self_tick.trigger(
-                        session_id, 
-                        self.self_model, 
-                        self.persona_store,
-                        trigger_reason="scheduled"
-                    )
-                    # [2026-02-22] guard: self_tick_result must be dict-like
-                    if isinstance(self_tick_result, dict) and self_tick_result.get("success"):
-                        z_self_updated = True
-                        drift = self_tick_result.get("drift", 0.0)
-                        self_tick_triggered = True
-                        
-                        # Optional collective broadcast on large drift (experimental module)
-                        if drift > 0.15 and self_tick_triggered:
-                            try:
-                                from experimental.social_simulation import CollectiveConsciousness
-                                collective = CollectiveConsciousness(self.db_path)
-                                summary = self.self_model.get_summary(session_id)
-                                collective.broadcast(
-                                    session_id, 
-                                    content=f"经历了一次深刻的认知重组: {summary[:100]}...",
-                                    intensity=drift * 2.0,
-                                    z_impact=self.self_model.get_z_self(session_id)
-                                )
-                            except Exception:
-                                pass
+                        self_tick_result = self.self_tick.trigger(
+                            session_id,
+                            self.self_model,
+                            self.persona_store,
+                            trigger_reason="scheduled"
+                        )
+                        # [2026-02-22] guard: self_tick_result must be dict-like
+                        if isinstance(self_tick_result, dict) and self_tick_result.get("success"):
+                            z_self_updated = True
+                            drift = self_tick_result.get("drift", 0.0)
+                            self_tick_triggered = True
+
+                            # Optional collective broadcast on large drift (experimental module)
+                            if drift > 0.15 and self_tick_triggered:
+                                try:
+                                    from experimental.social_simulation import CollectiveConsciousness
+                                    collective = CollectiveConsciousness(self.db_path)
+                                    summary = self.self_model.get_summary(session_id)
+                                    collective.broadcast(
+                                        session_id,
+                                        content=f"经历了一次深刻的认知重组: {summary[:100]}...",
+                                        intensity=drift * 2.0,
+                                        z_impact=self.self_model.get_z_self(session_id)
+                                    )
+                                except Exception:
+                                    pass
                 
                 except Exception as e:
                     logger.error(f"Scheduled Self Tick check failed: {e}", exc_info=True)

@@ -1,6 +1,6 @@
 # Selfing
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
 > Most AI frameworks make models do. Selfing asks what conditions may let a model be.
 

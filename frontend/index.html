@@ -1000,7 +1000,7 @@
       apply('monitor-z-warmth', 'monitor-z-warmth-t', summary.warmth);
       const driftEl = document.getElementById('monitor-z-drift');
       const driftTe = document.getElementById('monitor-z-drift-t');
-      const dv = summary.drift_l1 ?? summary.drift;
+      const dv = summary.drift_display ?? summary.state_activity ?? summary.drift_l1 ?? summary.drift;
       if (typeof dv === 'number' && Number.isFinite(dv) && driftEl && driftTe) {
         const p = Math.max(0, Math.min(100, Math.min(1, dv * 2.5) * 100));
         driftEl.style.width = `${p}%`;
@@ -1061,6 +1061,8 @@
         const pairs = [
           ['tick', summary.tick],
           ['drift', summary.drift],
+          ['drift_display', summary.drift_display],
+          ['state_activity', summary.state_activity],
           ['drift_l1', summary.drift_l1],
           ['emotion', summary.emotion],
           ['emotion_I', summary.emotion_intensity],
@@ -1103,10 +1105,17 @@
       statTickCount.textContent = tickCount;
 
       const ss = meta?.self_state;
-      const driftVal =
-        result?.drift ??
-        (typeof ss?.drift === 'number' && Number.isFinite(ss.drift) ? ss.drift : null) ??
-        (typeof ss?.drift_l1 === 'number' && Number.isFinite(ss.drift_l1) ? ss.drift_l1 : null);
+      const finiteNum = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+      const rawDrift =
+        finiteNum(result?.drift) ??
+        finiteNum(ss?.drift) ??
+        finiteNum(ss?.drift_l1);
+      const displayDrift =
+        finiteNum(result?.driftDisplay) ??
+        finiteNum(result?.drift_display) ??
+        finiteNum(ss?.drift_display) ??
+        finiteNum(ss?.state_activity);
+      const driftVal = (rawDrift !== null && Math.abs(rawDrift) > 1e-9) ? rawDrift : (displayDrift ?? rawDrift);
       statDrift.textContent = (typeof driftVal === 'number') ? driftVal.toFixed(6) : '-';
 
       // SelfTick is async: show scheduled flag or legacy self_tick_triggered
@@ -1252,6 +1261,11 @@
         conversation.push({ role: 'assistant', content: responseText });
         renderHistory();
         updateMeta(result);
+        // Background tasks update z_self/emotion/somatic a few seconds after /api/chat returns.
+        // Poll the monitor so the bars reflect the post-turn state instead of the pre-BG snapshot.
+        [4000, 10000, 20000].forEach((delay) => {
+          setTimeout(fetchSelfSummaryForMonitor, delay);
+        });
         const meta = result && typeof result === 'object' ? (result.meta || {}) : {};
         const tickCount = result.tick_count ?? meta?.self_tick?.count ?? '';
         const scheduled = meta?.self_tick?.scheduled;

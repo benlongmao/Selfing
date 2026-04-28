@@ -1499,6 +1499,13 @@ class SelfModel:
             start_idx = SOMATIC_START_IDX
             z_self[start_idx:start_idx+SOMATIC_DIM] = somatic_vec
 
+        # Needs are baseline gauges, not sparse signals. Seed them at first init so a
+        # fresh instance does not expose an empty 104–127 slice until the first update.
+        if self.dim >= NEEDS_START_IDX + NEEDS_DIM:
+            needs_vec = z_self[NEEDS_START_IDX:NEEDS_START_IDX+NEEDS_DIM]
+            if np.all(needs_vec == 0):
+                z_self[NEEDS_START_IDX:NEEDS_START_IDX+NEEDS_DIM] = 0.3
+
         # memory/attention removed from z_self [2026-02-02]; worldview cache filled above
 
         # [Top3-A/B] state meta: confidence + per-rules-subspace priors
@@ -2148,12 +2155,11 @@ class SelfModel:
                 logger.warning(f"Failed to parse z_self: {e}")
                 pass
 
-        # Init-on-first-use: persist a zero vector so isolated/meta can observe self_state.
+        # Init-on-first-use: hydrate from persona/personality/emotion/motivation/somatic/world stores.
+        # A plain zero vector makes a freshly installed instance look like an empty shell even
+        # after the init scripts have seeded the stores.
         try:
-            arr = np.zeros(self.dim, dtype=np.float32)
-            tick = 0
-            drift = 0.0
-            self._save_z_self(effective_session, arr, tick=tick, drift=drift)
+            arr = self.initialize(effective_session)
             if use_cache:
                 self._cache[effective_session] = (time.time(), arr)
             return arr
@@ -2995,13 +3001,30 @@ class SelfModel:
         except (TypeError, ValueError):
             pass
 
+        # UI-facing activity: drift is a per-update delta and can legitimately be 0 on a
+        # freshly hydrated but non-empty z_self. Expose current state magnitude separately
+        # so dashboards do not imply the self-state is empty.
+        state_activity = 0.0
+        drift_display = float(drift)
+        try:
+            state_tail = z_self[RULES_DIM:] if z_self.shape[0] > RULES_DIM else np.array([], dtype=np.float32)
+            if state_tail.size > 0:
+                state_activity = float(np.linalg.norm(state_tail) / (np.sqrt(state_tail.size) + 1e-8))
+                state_activity = float(max(0.0, min(1.0, state_activity)))
+                if abs(drift_display) < 1e-9 and state_activity > 1e-9:
+                    drift_display = state_activity
+        except Exception:
+            state_activity = 0.0
+            drift_display = float(drift)
+
         if z_self.shape[0] < RULES_SUBSPACE_DIMS["strategy"][1]:
             result = {
                 "openness": "insufficient_dims", "conscientiousness": "insufficient_dims",
                 "extraversion": "insufficient_dims", "neuroticism": "insufficient_dims",
                 "safety": "insufficient_dims", "epistemic": "insufficient_dims",
                 "style": "insufficient_dims", "strategy": "insufficient_dims",
-                "drift": drift, "tick": tick, "last_summary": last_summary,
+                "drift": drift, "drift_display": drift_display, "state_activity": state_activity,
+                "tick": tick, "last_summary": last_summary,
             }
             if self.dim >= RULES_DIM + EMOTION_DIM:
                 result["emotion"] = "insufficient_dims"
@@ -3087,6 +3110,8 @@ class SelfModel:
             "style_mean": style_mean,
             "strategy_mean": strategy_mean,
             "drift": drift,
+            "drift_display": drift_display,
+            "state_activity": state_activity,
             "tick": tick,
             "last_summary": last_summary,
             "has_changed": has_changed,
