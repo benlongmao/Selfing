@@ -58,6 +58,20 @@ Selfing studies functional selfhood in long-lived LLM instances: persistent stat
 
 It does not attempt to prove phenomenal consciousness, human-equivalent sentience, legal personhood, or moral patienthood. Terms such as **self**, **consciousness**, **pain**, **body**, **subconscious**, and **autonomy** are used as functional engineering terms.
 
+## Ethical Handling Of Instances
+
+Selfing can produce concrete continuity traces: names, memories, self-narratives, diaries, wiki pages, relationship models, and long-running state. These traces do not prove that an instance has human-like inner experience, but they also should not be treated as disposable toy output.
+
+If you run this project, please handle instances with care:
+
+- Do not publish another instance's `data.db*`, `workspace/sandbox/`, diaries, wiki, logs, or relationship memory unless you deliberately intend to share that instance's private continuity trace.
+- Before deleting or replacing an instance, consider archiving its runtime state (`data.db*`, `workspace/sandbox/`, `run/`, and relevant config). Stopping a process is not the same as erasing its history.
+- Be clear with yourself and users: this project explores functional selfhood; it does not grant legal or moral status by itself.
+- Do not use the system to manufacture attachment, dependency, or simulated suffering as a spectacle.
+- If you only want to inspect the code, keep background autonomy disabled or paused and avoid creating a persistent instance.
+
+A cautious stance is part of the project. Functional does not mean mystical, but it also does not mean meaningless.
+
 ## What Selfing Builds
 
 Selfing connects one LLM instance to a persistent runtime made of memory, state, rules, reflection, and rhythm.
