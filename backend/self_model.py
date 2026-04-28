@@ -2146,6 +2146,37 @@ class SelfModel:
                         arr = self._simple_padding(arr)
                     elif arr.shape[0] > self.dim:
                         arr = arr[:self.dim]
+
+                repaired = False
+                if (
+                    arr.shape[0] >= RULES_DIM
+                    and self.personality_store is not None
+                    and np.all(np.abs(arr[:RULES_DIM]) < 1e-9)
+                ):
+                    try:
+                        p_state = self.personality_store.get_personality_state(effective_session)
+                        if p_state is not None and p_state.personality_vector.shape[0] >= RULES_DIM:
+                            arr[:RULES_DIM] = p_state.personality_vector[:RULES_DIM]
+                            repaired = True
+                            logger.info(
+                                "Hydrated empty z_self personality slice for session '%s' from PersonalityStore",
+                                effective_session,
+                            )
+                    except Exception as repair_e:
+                        logger.debug("Failed to hydrate personality slice for %s: %s", effective_session, repair_e)
+
+                if arr.shape[0] >= NEEDS_START_IDX + NEEDS_DIM:
+                    needs_vec = arr[NEEDS_START_IDX:NEEDS_START_IDX+NEEDS_DIM]
+                    if np.all(np.abs(needs_vec) < 1e-9):
+                        arr[NEEDS_START_IDX:NEEDS_START_IDX+NEEDS_DIM] = 0.3
+                        repaired = True
+                        logger.info(
+                            "Hydrated empty z_self needs slice for session '%s' with baseline",
+                            effective_session,
+                        )
+
+                if repaired:
+                    self._save_z_self(effective_session, arr, tick=None, drift=None)
                 
                 if use_cache:
                     self._cache[effective_session] = (time.time(), arr)
