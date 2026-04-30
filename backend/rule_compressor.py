@@ -33,6 +33,39 @@ class RuleCompressor:
         self.embedder = get_embedder()
         self.scoring = ScoringSystem(db_path, self.persona_store)
         self.meta_rule_learner = meta_rule_learner  # optional MetaRuleLearner hook
+
+    def _group_contains_l0(self, group: List[PersonaItem]) -> bool:
+        """Return True when a compression group contains constitutional L0 rows."""
+        return any(int(getattr(item, "locked", 0) or 0) == 1 for item in group)
+
+    def _archive_old_rule_after_compression(self, old_item: PersonaItem, new_item: PersonaItem) -> bool:
+        """
+        Archive a source rule only when this cannot demote L0 content.
+
+        L0 rules may be consolidated, but their replacement must remain active L0
+        (``is_core=1`` and ``locked=1``), so constitutional content is still injected
+        every round after compression.
+        """
+        old_is_l0 = int(getattr(old_item, "locked", 0) or 0) == 1
+        new_is_l0 = (
+            int(getattr(new_item, "locked", 0) or 0) == 1
+            and int(getattr(new_item, "is_core", 0) or 0) == 1
+        )
+        if old_is_l0 and not new_is_l0:
+            logger.warning(
+                "[L0-PROTECT] Skip archiving locked rule %s because replacement %s is not L0",
+                old_item.id,
+                new_item.id,
+            )
+            return False
+
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                "UPDATE persona_items SET status='archived', last_seen_at=? WHERE id=?",
+                (datetime.now(timezone.utc).isoformat(), old_item.id)
+            )
+            conn.commit()
+        return True
     
     def compress_rules(
         self,
@@ -115,19 +148,30 @@ class RuleCompressor:
                 0.25 * scores.get("coreness", 0.5)
             )
             
-            # Mint PersonaItem
+            group_has_l0 = self._group_contains_l0(group)
+            source = {
+                "type": "l0_compression" if group_has_l0 else "rule_compression",
+                "source_rule_ids": [item.id for item in group],
+                "preserves_l0_injection": bool(group_has_l0),
+            }
+
+            # Mint PersonaItem. If any source row is L0, the abstraction must stay L0.
             new_item = PersonaItem(
                 id=f"compressed-{datetime.now(timezone.utc).timestamp()}",
                 text=abstract_rule,
                 embedding=abstract_emb,
-                score=scores["total_score"],
+                score=max(2.0, scores["total_score"]) if group_has_l0 else scores["total_score"],
                 importance=scores["importance"],
                 novelty=scores["novelty"],
                 reliability=scores["reliability"],
                 evidence_count=total_evidence,
                 created_at=datetime.now(timezone.utc).isoformat(),
                 last_seen_at=datetime.now(timezone.utc).isoformat(),
-                status="active"
+                status="active",
+                is_core=1 if group_has_l0 else 0,
+                core_version=max((getattr(item, "core_version", 0) or 0) for item in group) if group_has_l0 else 0,
+                locked=1 if group_has_l0 else 0,
+                source=source,
             )
             
             # Persist
@@ -135,15 +179,11 @@ class RuleCompressor:
             
             # Archive superseded rows (history retained)
             for old_item in group:
-                with sqlite3.connect(self.db_path) as conn:
-                    conn.execute(
-                        "UPDATE persona_items SET status='archived', last_seen_at=? WHERE id=?",
-                        (datetime.now(timezone.utc).isoformat(), old_item.id)
-                    )
-                    conn.commit()
+                archived = self._archive_old_rule_after_compression(old_item, new_item)
                 
                 # Audit event
-                self._record_compression_event(old_item.id, new_item.id, abstract_rule)
+                if archived:
+                    self._record_compression_event(old_item.id, new_item.id, abstract_rule)
             
             merged_groups.append({
                 "group_size": len(group),
@@ -631,13 +671,9 @@ Rules (one per line):"""
                 
                 # Archive fused shards
                 for old_item in group:
-                    with sqlite3.connect(self.db_path) as conn:
-                        conn.execute(
-                            "UPDATE persona_items SET status='archived', last_seen_at=? WHERE id=?",
-                            (datetime.now(timezone.utc).isoformat(), old_item.id)
-                        )
-                        conn.commit()
-                    self._record_compression_event(old_item.id, new_item.id, abstract_rule)
+                    archived = self._archive_old_rule_after_compression(old_item, new_item)
+                    if archived:
+                        self._record_compression_event(old_item.id, new_item.id, abstract_rule)
                 
                 consolidated_count += len(group)
                 logger.info(f"Consolidated {len(group)} items into: {abstract_rule[:30]}...")
@@ -645,6 +681,9 @@ Rules (one per line):"""
         # 4) Archive stale low-novelty debris (second pass — prior step may have freed slots)
         remaining_items = self.persona_store.get_low_score_items(threshold=0.3, limit=20)
         for item in remaining_items:
+            if int(getattr(item, "locked", 0) or 0) == 1:
+                logger.warning("[L0-PROTECT] Skip excreting locked rule %s", item.id)
+                continue
             if item.novelty < 0.2 and item.evidence_count < 3:
                 # Low novelty + weak evidence => safe to archive
                 with sqlite3.connect(self.db_path) as conn:

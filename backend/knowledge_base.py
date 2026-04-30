@@ -9,10 +9,12 @@ Created: 2026-02-07. Version: v1.0.
 """
 
 import os
+import re
 import sqlite3
 import uuid
 import json
 import logging
+import time
 import numpy as np
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any, Tuple
@@ -68,6 +70,7 @@ class KnowledgeBase:
     def __init__(self, db_path: str = "data.db"):
         self.db_path = db_path
         self.embedder = None
+        self._last_wiki_metadata_sync = 0.0
         
         if EMBEDDER_AVAILABLE:
             try:
@@ -147,6 +150,247 @@ class KnowledgeBase:
             
             conn.commit()
             logger.info("KnowledgeBase: Tables initialized")
+
+    def _json_loads(self, value: Any, default: Any) -> Any:
+        if value in (None, ""):
+            return default
+        if isinstance(value, (dict, list)):
+            return value
+        try:
+            return json.loads(value)
+        except Exception:
+            return default
+
+    def _governance_weight(self, metadata: Dict[str, Any]) -> float:
+        """Weight DB retrieval by wiki governance metadata when available."""
+        wiki = metadata.get("wiki") if isinstance(metadata, dict) else {}
+        if not isinstance(wiki, dict):
+            wiki = {}
+        status = str(wiki.get("status", metadata.get("wiki_status", "active")))
+        priority = str(wiki.get("priority", metadata.get("wiki_priority", "normal")))
+        kind = str(wiki.get("kind", metadata.get("wiki_kind", "")))
+
+        status_weight = {
+            "active": 1.0,
+            "historical": 0.72,
+            "archive_candidate": 0.55,
+            "archived": 0.35,
+        }.get(status, 0.85)
+        priority_weight = {"high": 1.2, "normal": 1.0, "low": 0.7}.get(priority, 1.0)
+        kind_weight = {
+            "operation_record": 0.72,
+            "world_event": 0.8,
+            "methodology": 1.08,
+            "lesson": 1.08,
+            "preference": 1.12,
+            "project": 1.12,
+        }.get(kind, 1.0)
+        return status_weight * priority_weight * kind_weight
+
+    def _query_terms(self, query: str) -> List[str]:
+        terms = set()
+        query_lower = (query or "").lower()
+        terms.update(w for w in query_lower.split() if len(w) > 1)
+        terms.update(re.findall(r"[a-zA-Z]{2,}", query_lower))
+        for chunk in re.findall(r"[\u4e00-\u9fff]+", query or ""):
+            if len(chunk) <= 4:
+                terms.add(chunk)
+            for size in (2, 3, 4):
+                if len(chunk) >= size:
+                    terms.update(chunk[i:i + size] for i in range(len(chunk) - size + 1))
+        return [term for term in terms if term]
+
+    def _keyword_score_for_row(self, query: str, row: sqlite3.Row) -> float:
+        query_lower = (query or "").lower()
+        title_lower = (row["title"] or "").lower()
+        content_lower = (row["content"] or "").lower()
+        tags_lower = (row["tags"] or "").lower() if "tags" in row.keys() else ""
+        metadata = self._json_loads(row["metadata"], {}) if "metadata" in row.keys() else {}
+        wiki = metadata.get("wiki", {}) if isinstance(metadata, dict) else {}
+        wiki_text = " ".join(
+            str(wiki.get(k, ""))
+            for k in ("summary", "use_when", "kind", "status", "priority", "path")
+        ).lower()
+
+        score = 0.0
+        if query_lower and query_lower in title_lower:
+            score += 0.6
+        if query_lower and query_lower in content_lower:
+            score += 0.3
+        if query_lower and query_lower in wiki_text:
+            score += 0.25
+
+        terms = self._query_terms(query)
+        if terms:
+            matched = 0
+            for term in terms:
+                if term in title_lower:
+                    score += 0.12
+                    matched += 1
+                elif term in tags_lower or term in wiki_text:
+                    score += 0.08
+                    matched += 1
+                elif term in content_lower:
+                    score += 0.04
+                    matched += 1
+            score += 0.2 * (matched / max(len(terms), 1))
+        return min(score, 1.0)
+
+    def _merge_wiki_metadata(self, metadata: Dict[str, Any], entry: Dict[str, Any]) -> Dict[str, Any]:
+        merged = dict(metadata or {})
+        wiki_meta = {
+            "path": entry.get("path", ""),
+            "title": entry.get("title", ""),
+            "category": entry.get("category", ""),
+            "kind": entry.get("kind", ""),
+            "status": entry.get("status", ""),
+            "priority": entry.get("priority", ""),
+            "summary": entry.get("summary", ""),
+            "use_when": entry.get("use_when", ""),
+            "tags": entry.get("tags", []) or [],
+            "aliases": entry.get("aliases", []) or [],
+            "supersedes": entry.get("supersedes", []) or [],
+            "last_compiled": entry.get("last_compiled", ""),
+            "synced_at": datetime.now(timezone.utc).isoformat(),
+        }
+        merged["wiki"] = wiki_meta
+        # Flat keys keep older scripts/tooling useful without nested JSON parsing.
+        merged["wiki_path"] = wiki_meta["path"]
+        merged["wiki_kind"] = wiki_meta["kind"]
+        merged["wiki_status"] = wiki_meta["status"]
+        merged["wiki_priority"] = wiki_meta["priority"]
+        merged["wiki_summary"] = wiki_meta["summary"]
+        merged["wiki_use_when"] = wiki_meta["use_when"]
+        return merged
+
+    def _update_item_metadata_from_wiki_entry(
+        self,
+        knowledge_id: str,
+        entry: Dict[str, Any],
+        session_id: Optional[str] = None,
+    ) -> bool:
+        if not knowledge_id or not entry:
+            return False
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            if session_id is None:
+                row = conn.execute(
+                    "SELECT id, tags, metadata FROM knowledge_items WHERE id = ?",
+                    (knowledge_id,),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT id, tags, metadata FROM knowledge_items WHERE id = ? AND session_id = ?",
+                    (knowledge_id, session_id),
+                ).fetchone()
+            if not row:
+                return False
+
+            metadata = self._json_loads(row["metadata"], {})
+            new_metadata = self._merge_wiki_metadata(metadata, entry)
+            existing_tags = self._json_loads(row["tags"], [])
+            merged_tags = sorted(set(existing_tags + (entry.get("tags") or [])))
+            conn.execute(
+                """
+                UPDATE knowledge_items
+                SET metadata = ?, tags = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (
+                    json.dumps(new_metadata, ensure_ascii=False),
+                    json.dumps(merged_tags, ensure_ascii=False),
+                    datetime.now(timezone.utc).isoformat(),
+                    knowledge_id,
+                ),
+            )
+            conn.commit()
+            return True
+
+    def sync_wiki_metadata_from_catalog(
+        self,
+        session_id: Optional[str] = None,
+        force_rebuild: bool = False,
+    ) -> Dict[str, Any]:
+        """Sync wiki catalog governance metadata back into ``knowledge_items.metadata``."""
+        try:
+            from backend.knowledge_compiler import get_compiler
+
+            compiler = get_compiler()
+            entries = compiler.rebuild_catalog() if force_rebuild else compiler._load_catalog()
+            if not entries:
+                entries = compiler.rebuild_catalog()
+
+            seen_ids = set()
+            updated = 0
+            for entry in entries:
+                for knowledge_id in entry.get("knowledge_ids") or []:
+                    if knowledge_id in seen_ids:
+                        continue
+                    seen_ids.add(knowledge_id)
+                    if self._update_item_metadata_from_wiki_entry(knowledge_id, entry, session_id=session_id):
+                        updated += 1
+            return {
+                "success": True,
+                "entries": len(entries),
+                "knowledge_ids": len(seen_ids),
+                "updated": updated,
+            }
+        except Exception as e:
+            logger.debug(f"[KNOWLEDGE] Wiki metadata sync skipped: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _maybe_sync_wiki_metadata(self, session_id: Optional[str] = None):
+        now = time.monotonic()
+        if now - self._last_wiki_metadata_sync < 300:
+            return
+        result = self.sync_wiki_metadata_from_catalog(session_id=session_id)
+        if result.get("success"):
+            self._last_wiki_metadata_sync = now
+
+    def _augment_results_with_wiki(
+        self,
+        query: str,
+        results: List[Dict[str, Any]],
+        top_k: int,
+    ) -> List[Dict[str, Any]]:
+        """Add catalog-only wiki hits as virtual knowledge rows."""
+        try:
+            from backend.knowledge_compiler import get_compiler
+
+            existing_paths = {
+                ((item.get("wiki") or {}).get("path") or "")
+                for item in results
+                if isinstance(item.get("wiki"), dict)
+            }
+            wiki_hits = get_compiler().search_wiki(query, limit=max(top_k, 3))
+            for hit in wiki_hits:
+                path = hit.get("path", "")
+                if not path or path in existing_paths:
+                    continue
+                summary = hit.get("summary") or hit.get("use_when") or ""
+                content = summary
+                if hit.get("use_when") and hit.get("use_when") not in content:
+                    content = f"{content}\nUse when: {hit.get('use_when')}".strip()
+                results.append({
+                    "id": f"wiki:{path}",
+                    "title": hit.get("title", ""),
+                    "content": content[:500],
+                    "source": "wiki",
+                    "category": hit.get("category", ""),
+                    "tags": hit.get("tags", []) or [],
+                    "confidence": 0.65,
+                    "similarity": round(float(hit.get("score", 0.0)), 3),
+                    "raw_similarity": round(float(hit.get("score", 0.0)), 3),
+                    "access_count": 0,
+                    "wiki": hit,
+                    "metadata": {"wiki": hit},
+                })
+                existing_paths.add(path)
+            results.sort(key=lambda item: item.get("similarity", 0.0), reverse=True)
+            return results[:top_k]
+        except Exception as e:
+            logger.debug(f"[KNOWLEDGE] Wiki result augmentation skipped: {e}")
+            return results[:top_k]
     
     def add_knowledge(
         self,
@@ -236,11 +480,14 @@ class KnowledgeBase:
             try:
                 from backend.knowledge_compiler import get_compiler
                 compiler = get_compiler()
-                compiler.quick_append(
+                wiki_result = compiler.quick_append(
                     title=title, content=content,
                     category=category, source_id=knowledge_id,
                     confidence=confidence,
                 )
+                entry = wiki_result.get("entry") if isinstance(wiki_result, dict) else None
+                if entry:
+                    self._update_item_metadata_from_wiki_entry(knowledge_id, entry, session_id=session_id)
             except Exception as e:
                 logger.debug(f"[KNOWLEDGE] Wiki compilation skipped: {e}")
             
@@ -308,6 +555,7 @@ class KnowledgeBase:
             Ranked list of dicts with truncated ``content`` for UI/prompt use.
         """
         try:
+            self._maybe_sync_wiki_metadata(session_id=session_id)
             results = []
             
             with sqlite3.connect(self.db_path) as conn:
@@ -316,7 +564,7 @@ class KnowledgeBase:
                 sql = """
                     SELECT id, title, content, source, category, tags, 
                            confidence, embedding, created_at, access_count,
-                           usefulness_score
+                           usefulness_score, metadata
                     FROM knowledge_items 
                     WHERE session_id = ? AND confidence >= ?
                 """
@@ -330,7 +578,7 @@ class KnowledgeBase:
                 rows = cursor.fetchall()
             
             if not rows:
-                return []
+                return self._augment_results_with_wiki(query, [], top_k)
             
             if self.embedder:
                 try:
@@ -338,19 +586,21 @@ class KnowledgeBase:
                     
                     scored_results = []
                     for row in rows:
+                        metadata = self._json_loads(row["metadata"], {})
                         if row["embedding"]:
                             item_embedding = np.frombuffer(row["embedding"], dtype=np.float32)
-                            similarity = np.dot(query_embedding, item_embedding) / (
+                            raw_similarity = np.dot(query_embedding, item_embedding) / (
                                 np.linalg.norm(query_embedding) * np.linalg.norm(item_embedding) + 1e-8
                             )
                         else:
-                            similarity = 0.3 if query.lower() in row["title"].lower() or query.lower() in row["content"].lower() else 0.0
+                            raw_similarity = self._keyword_score_for_row(query, row)
+                        similarity = float(raw_similarity) * self._governance_weight(metadata)
                         
-                        scored_results.append((row, float(similarity)))
+                        scored_results.append((row, float(similarity), float(raw_similarity), metadata))
                     
                     scored_results.sort(key=lambda x: x[1], reverse=True)
 
-                    for row, similarity in scored_results[:top_k]:
+                    for row, similarity, raw_similarity, metadata in scored_results[:top_k]:
                         if similarity > 0.1:
                             results.append({
                                 "id": row["id"],
@@ -361,7 +611,10 @@ class KnowledgeBase:
                                 "tags": json.loads(row["tags"]) if row["tags"] else [],
                                 "confidence": row["confidence"],
                                 "similarity": round(similarity, 3),
-                                "access_count": row["access_count"]
+                                "raw_similarity": round(raw_similarity, 3),
+                                "access_count": row["access_count"],
+                                "wiki": metadata.get("wiki", {}),
+                                "metadata": metadata,
                             })
                     
                 except Exception as e:
@@ -373,7 +626,7 @@ class KnowledgeBase:
             if results:
                 self._update_access(results[0]["id"])
             
-            return results
+            return self._augment_results_with_wiki(query, results, top_k)
             
         except Exception as e:
             logger.error(f"[KNOWLEDGE] Search failed: {e}")
@@ -385,21 +638,9 @@ class KnowledgeBase:
         query_lower = query.lower()
         
         for row in rows:
-            score = 0
-            title_lower = row["title"].lower()
-            content_lower = row["content"].lower()
-            
-            if query_lower in title_lower:
-                score += 0.6
-            if query_lower in content_lower:
-                score += 0.3
-            
-            for word in query_lower.split():
-                if len(word) > 2:
-                    if word in title_lower:
-                        score += 0.1
-                    if word in content_lower:
-                        score += 0.05
+            metadata = self._json_loads(row["metadata"], {}) if "metadata" in row.keys() else {}
+            raw_score = self._keyword_score_for_row(query, row)
+            score = raw_score * self._governance_weight(metadata)
             
             if score > 0:
                 results.append({
@@ -411,7 +652,10 @@ class KnowledgeBase:
                     "tags": json.loads(row["tags"]) if row["tags"] else [],
                     "confidence": row["confidence"],
                     "similarity": round(min(score, 1.0), 3),
-                    "access_count": row["access_count"]
+                    "raw_similarity": round(raw_score, 3),
+                    "access_count": row["access_count"],
+                    "wiki": metadata.get("wiki", {}),
+                    "metadata": metadata,
                 })
         
         results.sort(key=lambda x: x["similarity"], reverse=True)
@@ -419,6 +663,8 @@ class KnowledgeBase:
     
     def _update_access(self, knowledge_id: str):
         """Bump access counters for the top hit."""
+        if knowledge_id.startswith("wiki:"):
+            return
         try:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute("""
@@ -528,10 +774,17 @@ class KnowledgeBase:
             try:
                 from backend.knowledge_compiler import get_compiler
                 category = row["category"] if row else self.CATEGORY_COMMON
-                get_compiler().quick_append(
+                wiki_result = get_compiler().quick_append(
                     title=title_final, content=content_final,
                     category=category, source_id=knowledge_id,
                 )
+                entry = wiki_result.get("entry") if isinstance(wiki_result, dict) else None
+                if entry:
+                    self._update_item_metadata_from_wiki_entry(
+                        knowledge_id,
+                        entry,
+                        session_id=session_id or row["session_id"],
+                    )
             except Exception as e2:
                 logger.debug(f"[KNOWLEDGE] Wiki compilation on update skipped: {e2}")
             
