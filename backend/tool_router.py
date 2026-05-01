@@ -1614,7 +1614,9 @@ Example: To send a diary as attachment, include attachments parameter with the f
                 if func_name == "read_self_code":
                     return si.read_self_code(
                         args.get("file_path", ""),
-                        max_lines=args.get("max_lines", 1000)
+                        max_lines=args.get("max_lines", 1000),
+                        start_line=args.get("start_line", 1),
+                        end_line=args.get("end_line"),
                     )
                 elif func_name == "list_self_files":
                     return si.list_self_files(args.get("directory", "backend/"))

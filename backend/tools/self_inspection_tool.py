@@ -9,7 +9,7 @@ import os
 import ast
 import re
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,21 @@ ALLOWED_DIRS = [
 
 MAX_FILE_SIZE = 500000  # 500KB
 MAX_LINES_DEFAULT = 1000
+MAX_LINES_PER_CALL_CAP = 5000
+
+
+def _coerce_positive_int(value: Any, default: int, *, minimum: int = 1, maximum: Optional[int] = None) -> int:
+    try:
+        if value is None:
+            n = default
+        else:
+            n = int(value)
+    except (TypeError, ValueError):
+        n = default
+    n = max(minimum, n)
+    if maximum is not None:
+        n = min(n, maximum)
+    return n
 
 
 class SelfInspectionTool:
@@ -53,8 +68,14 @@ class SelfInspectionTool:
 
         return True, ""
 
-    def read_self_code(self, file_path: str, max_lines: int = MAX_LINES_DEFAULT) -> Dict[str, Any]:
-        """Read a UTF-8 text file under the allowlist (truncates at ``max_lines``)."""
+    def read_self_code(
+        self,
+        file_path: str,
+        max_lines: int = MAX_LINES_DEFAULT,
+        start_line: int = 1,
+        end_line: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Read a UTF-8 text file under the allowlist, with optional 1-based line windowing."""
         try:
             is_allowed, error_msg = self._is_path_allowed(file_path)
             if not is_allowed:
@@ -89,21 +110,63 @@ class SelfInspectionTool:
                 lines = f.readlines()
 
             total_lines = len(lines)
-            truncated = total_lines > max_lines
+            sl = _coerce_positive_int(start_line, 1, minimum=1)
+            ml = _coerce_positive_int(
+                max_lines, MAX_LINES_DEFAULT, minimum=1, maximum=MAX_LINES_PER_CALL_CAP
+            )
 
-            if truncated:
-                content = ''.join(lines[:max_lines])
-                content += f"\n\n... (truncated: {total_lines} lines total, showing first {max_lines}) ..."
+            if sl > total_lines:
+                return {
+                    "file_path": file_path,
+                    "total_lines": total_lines,
+                    "start_line": sl,
+                    "end_line": total_lines,
+                    "displayed_lines": 0,
+                    "truncated": False,
+                    "has_more_before": False,
+                    "has_more_after": False,
+                    "content": "",
+                    "file_size": file_size,
+                    "note": f"start_line ({sl}) is past EOF (total_lines={total_lines})",
+                }
+
+            if end_line is None:
+                el = min(sl + ml - 1, total_lines)
             else:
-                content = ''.join(lines)
+                el = _coerce_positive_int(end_line, sl, minimum=sl, maximum=total_lines)
+                if el - sl + 1 > MAX_LINES_PER_CALL_CAP:
+                    el = min(sl + MAX_LINES_PER_CALL_CAP - 1, total_lines)
+
+            chunk = lines[sl - 1 : el]
+            content = "".join(chunk)
+            displayed = len(chunk)
+            has_more_before = sl > 1
+            has_more_after = el < total_lines
+            truncated = has_more_before or has_more_after
+
+            hints: List[str] = []
+            if has_more_before:
+                hints.append(
+                    f"... lines 1–{sl - 1} omitted ({total_lines} total); lower start_line to include them."
+                )
+            if has_more_after:
+                hints.append(
+                    f"... lines {el + 1}–{total_lines} omitted; next call use start_line={el + 1} with max_lines or end_line."
+                )
+            if hints:
+                content = content.rstrip("\n") + "\n\n" + " ".join(hints)
 
             return {
                 "file_path": file_path,
                 "total_lines": total_lines,
-                "displayed_lines": min(total_lines, max_lines),
+                "start_line": sl,
+                "end_line": el,
+                "displayed_lines": displayed,
                 "truncated": truncated,
+                "has_more_before": has_more_before,
+                "has_more_after": has_more_after,
                 "content": content,
-                "file_size": file_size
+                "file_size": file_size,
             }
 
         except Exception as e:
@@ -543,7 +606,8 @@ class SelfInspectionTool:
                     "name": "read_self_code",
                     "description": (
                         "Read a source file from this repo (allowed roots: backend/, config/, scripts/, docs/). "
-                        "Example: read_self_code('backend/self_model.py')."
+                        "Supports 1-based line paging via start_line / end_line / max_lines. "
+                        "Example: read_self_code('backend/self_model.py', start_line=1001, max_lines=1000)."
                     ),
                     "parameters": {
                         "type": "object",
@@ -552,9 +616,18 @@ class SelfInspectionTool:
                                 "type": "string",
                                 "description": "Path relative to repo root, e.g. 'backend/self_model.py'"
                             },
+                            "start_line": {
+                                "type": "integer",
+                                "description": "First line to include (1-based). Default 1",
+                                "default": 1
+                            },
+                            "end_line": {
+                                "type": "integer",
+                                "description": "Last line to include (1-based). If omitted, reads up to max_lines lines from start_line"
+                            },
                             "max_lines": {
                                 "type": "integer",
-                                "description": "Max lines to return (default 1000)",
+                                "description": "When end_line is omitted, read at most this many lines from start_line (default 1000)",
                                 "default": 1000
                             }
                         },
