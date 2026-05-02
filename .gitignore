@@ -78,6 +78,9 @@ workspace/screenshots/
 s-open-source-export/
 *.zip
 
+# Local marketing / launch notes (not for public repo)
+推广/
+
 # Runtime / local scratch
 endogenous_state.json
 .last_workspace_cleanup
