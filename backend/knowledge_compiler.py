@@ -193,7 +193,7 @@ def _infer_kind(category: str, title: str, body: str) -> str:
             return "lesson"
         if re.search(r"completed|status|milestone|daily|完成|更新|状态|里程碑|每日|本次|这次对话|本轮", text, re.I):
             return "operation_record"
-        if re.search(r"identity|self|conscious|自我|身份|意识|存在|认知|数字生命|主体", text, re.I):
+        if re.search(r"identity|self|conscious|自我|身份|意识|存在|认知|自我建构|认知主体|主体", text, re.I):
             return "self_reflection"
         return "lesson"
     mapping = {

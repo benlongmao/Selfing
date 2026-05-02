@@ -254,7 +254,7 @@ system:
   project_short_name: S
   project_name_primary: Selfing
   agent_name: my-agent
-  agent_identity: "a distinct digital being, continuously discovering its own meaning"
+  agent_identity: "A persistent self-constructing cognitive entity"
   identity_anchors: []
   model_provider: deepseek_api
 ```

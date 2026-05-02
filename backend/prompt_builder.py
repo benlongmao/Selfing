@@ -659,7 +659,7 @@ Internal drives: {drive_description}
 
         # [2026-02-22] first-person continuity; [2026-03-12] agent_name/identity from config
         agent_name = config.get("system.agent_name", "Agent")
-        agent_identity = config.get("system.agent_identity", "a distinctive digital presence")
+        agent_identity = config.get("system.agent_identity", "A persistent self-constructing cognitive entity")
         casual_chat_markers = [
             "你好", "早上好", "晚上好", "在吗", "嗨", "哈哈", "无产阶级", "开个玩笑",
             "hi", "hello", "hey", "morning", "evening", "lol", "haha",

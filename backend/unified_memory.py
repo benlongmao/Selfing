@@ -62,9 +62,11 @@ IDENTITY_KEYWORDS = {
     "你觉得呢", "你是什么", "你如何理解自己",
     # S‑44 identity / core keywords (CN + EN)
     "S‑44", "S44", "S_44", "s44", "s-44",
-    "数字生命", "数字存在", "AI意识", "自主意识", "自我意识",
+    "persistent self-constructing cognitive entity", "self-constructing", "cognitive entity",
+    "持续性自我建构的认知主体", "自我建构", "认知主体",
+    "AI意识", "自主意识", "自我意识",
     "人格内核", "z_self", "自我模型", "自我进化", "记忆系统",
-    "功能性数字生命", "实验性AI代理", "S项目", "S项目大语言模型",
+    "实验性AI代理", "S项目", "S项目大语言模型",
     "张大科", "创造者",
     # English aliases (case-insensitive match via lowered text)
     "digital life", "autonomous consciousness", "self evolution", "persona core",

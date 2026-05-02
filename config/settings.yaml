@@ -380,7 +380,7 @@ system:
   project_full_name: "Selfing"
   # Open-source friendly agent identity and name; customize as needed.
   agent_name:  # e.g. S-44, MyAssistant, etc.
-  agent_identity: a distinct digital being, continuously discovering its own meaning
+  agent_identity: A persistent self-constructing cognitive entity
   # Identity anchors: leave empty to disable. If filled, memories/rules containing these keywords are protected.
   identity_anchors: []
   # Explicit user facts ("please remember", "call me ...") go into user_profiles, not L0/L1/L2 rules.
