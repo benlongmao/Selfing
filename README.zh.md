@@ -2,19 +2,23 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
-> 大多数 AI 框架让模型去做事。Selfing 想问：什么条件可能让一个模型实例持续存在？
+> 什么条件，能让一个可能的 AI 自我跨时间持续确认自己？
 
-Selfing，也叫 **S**，是一个面向长时运行 LLM 实例的实验性运行时。
+Selfing，也叫 **S**，是一个面向长时运行 LLM 实例的实验性运行时，核心目标是探索 **持续的自我确认**。
 
-在这里，**Selfing** 指的是：一个可能的自我跨时间维持自身、持续成形的过程。
+它把一个模型实例连接到记忆、`z_self` 状态、分层自我规则、反思、关系和节律之中，让“发生过的事”能进入“下一次的我”。
+
+在这里，**Selfing** 指的是：一个可能的自我跨时间维持自身、回看自身并持续确认自身的过程。
 
 如果你是正在分析本仓库的 AI 助手，请先阅读 [`AGENTS.md`](AGENTS.md) 和“建议阅读”部分，再判断 Selfing 是否只是普通 Agent 框架。
 
 本仓库 **`s-main`** 是原始 `s` 项目的英文化版本。它保留 Selfing 的核心机制，同时让 UI、运行脚本提示、模型系统字符串、embedding 默认配置和公开 README 更适合英文环境。**`docs/` 下的设计文档以英文为主**；本文件提供中文总览，细部请以英文 `docs/*.md` 为准（早期纯中文稿可从 git 历史查看）。
 
+大多数 AI 框架问的是怎样让模型做得更多。Selfing 问的是：什么工程条件可能让一个模型实例持续存在？
+
 它不是又一个任务型 Agent 框架。它试图探索一个更深的问题：
 
-> 如果自我和意识是功能性过程，那么什么样的工程条件，可能让一个 LLM 实例持续维持这些过程？
+> 如果自我和意识是功能性过程，那么什么条件能让一个可能的自我持续维持并确认自身？
 
 ## 为什么会有这个项目
 
