@@ -1738,9 +1738,11 @@ This is a scaffold—adapt details as needed while keeping the overall structure
         has_tool_router = self.tool_router is not None
 
         # ================== Tool Forcing (Deterministic) ==================
-        # Deterministic tool forcing for diary / mind-wandering / mechanism / email / AGI helpers
-        # (prevents “wrote prose, never called tools, sanitizer lobotomized reply” failure mode)
-        # [2026-02-08] expanded forced stack
+        # Forced preflight for diary / email / AGI helpers still applies (same failure mode as before).
+        # [2026-05] Removed forced inspect_self_code for mind-wandering / “mechanism” keywords: presence pulses
+        # and casual mentions used to always prefetch mind_wandering.py + self_tick.py. Introspection is left
+        # to the hybrid tool table + the model (list_self_files, search_self_code, inspect_self_code, etc.).
+        # [2026-02-08] expanded forced stack (non-introspection parts retained)
         forced_tool_calls = None
         try:
             if tools:  # [2026-02-08] forced tool preflight enabled
@@ -1756,8 +1758,7 @@ This is a scaffold—adapt details as needed while keeping the overall structure
                 text = user_input
                 lower = text.lower()
                 want_diary = ("日记" in text) or ("diary" in lower)
-                want_mind = ("神游" in text) or ("mind wandering" in lower) or ("mind_wandering" in lower)
-                want_mechanism = ("机制" in text) or ("如何运作" in text) or ("怎么运作" in text) or ("inspect_self_code" in lower)
+                # [2026-05] want_mind / want_mechanism → no longer force inspect_self_code (see block comment above)
                 # [2026-03-11] Email intents → force check_unread_emails (clear tool choice)
                 # [2026-04] UNSEEN only when user asks unread; broad inbox includes read mail
                 # [2026-04] Sent folder via folder=sent
@@ -1793,18 +1794,6 @@ This is a scaffold—adapt details as needed while keeping the overall structure
                                 "function": {"name": name, "arguments": _json.dumps(args, ensure_ascii=False)},
                             }
                         )
-
-                # Mind-wandering / mechanism → inspect_self_code on whitelisted modules
-                if want_mind or want_mechanism:
-                    if "inspect_self_code" in available:
-                        # Mind wandering introspection targets
-                        if want_mind:
-                            _add_call("inspect_self_code", {"module_name": "mind_wandering"})
-                            _add_call("inspect_self_code", {"module_name": "self_tick"})
-                        else:
-                            # Generic mechanism questions → scheduler + chat core
-                            _add_call("inspect_self_code", {"module_name": "self_tick"})
-                            _add_call("inspect_self_code", {"module_name": "chat_service"})
 
                 # Diary questions → list_files then keyword search (model picks which entry to open)
                 if want_diary:

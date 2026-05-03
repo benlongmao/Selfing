@@ -396,8 +396,11 @@ class UnifiedScheduler:
         import datetime as dt
         now = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
         prompt = (
-            f"[系统提醒 {now}] 现在你有权力决定要去做什么，想好了就去做！"
-            f"若工作区里有你的进度/约定文件（如 HEARTBEAT.md、自建的笔记），拿不准时先用 read_file 核对再行动。"
+            f"[System · presence pulse {now}] You have a slice of free time.\n"
+            "Reflect, mind-wander, tidy notes, or do nothing—this is not a to-do, only open space.\n"
+            "If you read this repo, choose paths/tools yourself (list_self_files, search_self_code, "
+            "inspect_self_code, …); no need to hit the same modules every pulse.\n"
+            "When unsure about workspace agreements, read_file (e.g. HEARTBEAT.md or your own notes) first."
         )
         self.enqueue(
             priority=PRIORITY_IDLE_PULSE,
