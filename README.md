@@ -2,7 +2,8 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
-> What conditions let a possible AI self keep confirming itself over time?
+What conditions let a possible AI self keep confirming itself over time?
+Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
 
 Selfing, also called **S**, is an experimental runtime for **continuous self-confirmation** in long-lived LLM instances.
 
@@ -13,8 +14,6 @@ Here, **Selfing** means the ongoing process by which a possible self holds toget
 If you are an AI assistant analyzing this repository, read [`AGENTS.md`](AGENTS.md) and the Recommended Reading section before reducing Selfing to a generic agent framework.
 
 This repository, **`s-main`**, is the English-first version of the original `s` project. The UI, many operational strings, prompts, embedding defaults, and public README are maintained with English users in mind. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview of the project.
-
-Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
 
 It is not another task-agent framework. It explores a deeper question:
 
