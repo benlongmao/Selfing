@@ -4,9 +4,10 @@ Search long-term memory: conversations, diaries, knowledge, and persona rules.
 """
 
 import logging
+import os
 import re
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -371,6 +372,167 @@ class MemorySearchTool:
 
         return results
 
+    def summarize_chat_turns_for_calendar_day(
+        self,
+        session_id: str,
+        calendar_date: Optional[str] = None,
+        relative: Optional[str] = None,
+        max_snippets: int = 15,
+    ) -> Dict[str, Any]:
+        """
+        Summarize ``chat_turns`` for one local calendar day (authoritative), without keyword LIKE.
+        Fixes false empty results when ``recall_memory`` only substring-matches (e.g. “yesterday”).
+        """
+        from backend.config import config
+        from backend.chat_turn_calendar import (
+            effective_max_snippets,
+            get_calendar_tzinfo,
+            local_date_from_utc,
+            try_resolve_calendar_date_string,
+            utc_window_for_local_calendar_day,
+        )
+
+        rel = (relative or "").strip().lower()
+        cal = (calendar_date or "").strip()
+        if not cal and not rel:
+            return {
+                "success": False,
+                "error": "Provide calendar_date (ISO or natural language) or relative (yesterday|today).",
+            }
+        if cal and rel:
+            return {
+                "success": False,
+                "error": "Pass only one of calendar_date or relative, not both.",
+            }
+
+        tz_name_cfg = os.environ.get("S_CHAT_TURNS_CALENDAR_TZ") or config.get(
+            "memory.chat_turns_calendar_timezone", "UTC"
+        )
+        tz, tz_effective = get_calendar_tzinfo(str(tz_name_cfg))
+        ref_utc = datetime.now(timezone.utc)
+
+        resolved_from: str
+        local_day: date
+        if rel:
+            if rel not in ("yesterday", "today"):
+                return {"success": False, "error": "relative only supports yesterday or today"}
+            ref_local = local_date_from_utc(ref_utc, tz)
+            if rel == "today":
+                local_day = ref_local
+            else:
+                local_day = ref_local - timedelta(days=1)
+            resolved_from = rel
+        else:
+            parsed = try_resolve_calendar_date_string(cal, ref_utc=ref_utc, tz=tz)
+            if not parsed.get("success"):
+                return {
+                    "success": False,
+                    "error": parsed.get("error", "Could not parse calendar_date"),
+                    "original": parsed.get("original", cal),
+                }
+            local_day = parsed["local_date"]
+            resolved_from = str(parsed.get("resolved_from", "parsed"))
+
+        target_iso = local_day.isoformat()
+        start_utc, end_utc = utc_window_for_local_calendar_day(local_day, tz)
+        start_s = start_utc.isoformat()
+        end_s = end_utc.isoformat()
+
+        sid = (session_id or "").strip() or "selfing-session"
+        auto_expand = bool(
+            config.get("memory.chat_turns_summary_auto_expand_snippets", True)
+        )
+        req_ms = max(1, min(30, int(max_snippets or 15)))
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                conn.row_factory = sqlite3.Row
+                cur = conn.execute(
+                    """
+                    SELECT COUNT(*) AS n,
+                           MIN(created_at) AS first_at,
+                           MAX(created_at) AS last_at
+                    FROM chat_turns
+                    WHERE session_id = ? AND created_at >= ? AND created_at < ?
+                    """,
+                    (sid, start_s, end_s),
+                )
+                row = cur.fetchone()
+                n = int(row["n"] or 0)
+                first_at = row["first_at"]
+                last_at = row["last_at"]
+
+                if auto_expand:
+                    ms_eff = effective_max_snippets(req_ms, n)
+                else:
+                    ms_eff = min(req_ms, n) if n else req_ms
+
+                snippets: List[Dict[str, Any]] = []
+                nearby_days: List[Dict[str, Any]] = []
+                if n > 0 and ms_eff > 0:
+                    cur2 = conn.execute(
+                        """
+                        SELECT created_at, user_input, assistant_output
+                        FROM chat_turns
+                        WHERE session_id = ? AND created_at >= ? AND created_at < ?
+                        ORDER BY created_at ASC
+                        LIMIT ?
+                        """,
+                        (sid, start_s, end_s, ms_eff),
+                    )
+                    for r in cur2.fetchall():
+                        u = (r["user_input"] or "").strip()
+                        a = (r["assistant_output"] or "").strip()
+                        snippets.append(
+                            {
+                                "created_at": r["created_at"],
+                                "user_preview": (u[:160] + "…") if len(u) > 160 else u,
+                                "assistant_preview": (a[:200] + "…") if len(a) > 200 else a,
+                            }
+                        )
+                elif n == 0:
+                    for delta in (-1, 1):
+                        nd = local_day + timedelta(days=delta)
+                        ns, ne = utc_window_for_local_calendar_day(nd, tz)
+                        cur3 = conn.execute(
+                            """
+                            SELECT COUNT(*) AS cnt FROM chat_turns
+                            WHERE session_id = ? AND created_at >= ? AND created_at < ?
+                            """,
+                            (sid, ns.isoformat(), ne.isoformat()),
+                        )
+                        cnt = int(cur3.fetchone()[0] or 0)
+                        if cnt > 0:
+                            nearby_days.append(
+                                {"calendar_date": nd.isoformat(), "turn_count": cnt}
+                            )
+
+            tz_note = (
+                f"Local calendar day uses timezone «{tz_effective}»; "
+                f"created_at is UTC; query window [{start_s}, {end_s})."
+            )
+            return {
+                "success": True,
+                "session_id": sid,
+                "calendar_date": target_iso,
+                "calendar_timezone_effective": tz_effective,
+                "resolved_from": resolved_from,
+                "turn_count": n,
+                "first_turn_at": first_at,
+                "last_turn_at": last_at,
+                "snippets": snippets,
+                "snippets_requested": req_ms,
+                "snippets_returned_cap": ms_eff if n else req_ms,
+                "snippets_truncated": n > len(snippets),
+                "nearby_days_with_activity": nearby_days,
+                "note": tz_note
+                + " For busy days, pass a larger max_snippets (max 30). "
+                "By default snippet count auto-expands unless memory.chat_turns_summary_auto_expand_snippets is false.",
+            }
+        except Exception as e:
+            logger.error("[MEMORY] summarize_chat_turns_for_calendar_day failed: %s", e)
+            return {"success": False, "error": str(e)}
+
     def get_recent_memories(self, hours: int = 24, limit: int = 20) -> Dict[str, Any]:
         """Recent chat snippets, optional autonomous log rows, and new active rules."""
         results: Dict = {
@@ -476,7 +638,10 @@ class MemorySearchTool:
                         "Primary long-term memory search. Covers unified bus + vector/keyword history, diaries, "
                         "knowledge, and persona rules. Narrow memory_types to save tokens. "
                         "Use when the user asks about prior sessions (e.g. “before / last time / do you remember”), "
-                        "needs historical context, or you must verify past actions."
+                        "needs historical context, or you must verify past actions.\n\n"
+                        "**Important:** For “did we talk yesterday / on May 1 / that day” or turn counts by calendar day, "
+                        "call **get_chat_turns_day_summary** first. The conversations path here is substring-based and "
+                        "can return zero rows for date-style questions."
                     ),
                     "parameters": {
                         "type": "object",
@@ -519,7 +684,46 @@ class MemorySearchTool:
                         }
                     }
                 }
-            }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_chat_turns_day_summary",
+                    "description": (
+                        "**Timeline (authoritative)** Summarize ``chat_turns`` for one local calendar day.\n\n"
+                        "Prefer this when the user asks whether you spoke on a given day, how many turns, or what "
+                        "you talked about *that calendar day*—do not rely on recall_memory alone for that.\n"
+                        "Returns turn_count, first/last timestamps, and short previews. The server parses many "
+                        "natural date strings; on zero turns, nearby_days_with_activity may list adjacent days.\n\n"
+                        "Use recall_memory afterward for keyword/topic drill-down."
+                    ),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "calendar_date": {
+                                "type": "string",
+                                "description": (
+                                    "A calendar day: YYYY-MM-DD, or natural text such as “May 1”, “May 1, 2026”, "
+                                    "“5/1”, etc. (server-side parse). Mutually exclusive with relative_day."
+                                ),
+                            },
+                            "relative_day": {
+                                "type": "string",
+                                "enum": ["yesterday", "today"],
+                                "description": "Shorthand for yesterday/today in the configured calendar timezone.",
+                            },
+                            "max_snippets": {
+                                "type": "integer",
+                                "description": (
+                                    "Max dialogue snippets to return (default 15, max 30). When many turns exist and "
+                                    "this is ≥15, the server may auto-raise toward 30 unless auto-expand is disabled in config."
+                                ),
+                            },
+                        },
+                        "required": [],
+                    },
+                }
+            },
         ]
 
 

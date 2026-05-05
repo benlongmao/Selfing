@@ -26,12 +26,14 @@ logger = logging.getLogger(__name__)
 
 # [2026-03-20] Layer 0: always-on minimal toolkit + introspection
 # [2026-04-06] rename_file lives in basic_file; agent_memory_* merged; recall_memory added
+# [2026-05-05] get_chat_turns_day_summary: calendar-day chat_turns summary (paired with recall_memory)
 CORE_TOOLS = {
     "list_my_tools",
     "request_tool_group",
     "read_file",
     "write_file",
     "list_files",
+    "get_chat_turns_day_summary",
     "recall_memory",
     "tavily_search",
     "get_current_time",
@@ -203,8 +205,8 @@ TOOL_GROUPS = {
                   "read_my_code", "list_my_code_files", "analyze_code_structure"]
     },
     "companion": {
-        "keywords": ["情感", "安全", "情绪", "emotion", "safety", "陪伴"],
-        "tools": ["recall_memory", "analyze_user_emotion", "check_safety_risk"]
+        "keywords": ["情感", "安全", "情绪", "emotion", "safety", "陪伴", "companion", "feelings"],
+        "tools": ["get_chat_turns_day_summary", "recall_memory", "analyze_user_emotion", "check_safety_risk"]
     },
     "browser": {
         "keywords": ["浏览器", "网页", "截图", "browser", "navigate", "screenshot", "webpage", "打开网站", "访问"],
@@ -234,8 +236,10 @@ TOOL_GROUPS = {
     "memory_recall": {
         "keywords": ["记忆", "回忆", "之前", "以前", "上次", "历史", "我说过", "记得",
                      "memory", "recall", "remember", "history", "past", "previous",
-                     "日记", "对话历史", "知识库"],
-        "tools": ["recall_memory", "get_recent_context"]
+                     "日记", "对话历史", "知识库",
+                     "yesterday", "today", "last week", "that day", "what did we say", "did we talk",
+                     "calendar", "on may", "on april"],
+        "tools": ["get_chat_turns_day_summary", "recall_memory", "get_recent_context"]
     },
     "visualization": {
         "keywords": ["图表", "可视化", "画图", "折线图", "柱状图", "饼图", "散点图",
@@ -425,6 +429,7 @@ COMPACT_DESCRIPTIONS = {
     "set_my_rhythm": "设置自主节律",
     
     # Companion (shares recall_memory with memory_recall; avoid recall_memories)
+    "get_chat_turns_day_summary": "Summarize chat_turns for one local calendar day (turns, previews)",
     "recall_memory": "综合回忆（对话/日记/知识/规则）",
     "analyze_user_emotion": "分析用户情感",
     "check_safety_risk": "检查安全风险",

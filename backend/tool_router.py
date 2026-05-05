@@ -2749,7 +2749,24 @@ Example: To send a diary as attachment, include attachments parameter with the f
                 if not self.memory_search:
                     return {"error": "MemorySearchTool not available"}
                 return self.memory_search.get_recent_memories(args.get("hours", 24))
-            
+
+            elif func_name == "get_chat_turns_day_summary":
+                if not self.memory_search:
+                    return {"error": "MemorySearchTool not available"}
+                ms = args.get("max_snippets", 15)
+                try:
+                    ms = int(ms)
+                except (TypeError, ValueError):
+                    ms = 15
+                rel = (args.get("relative_day") or args.get("relative") or "").strip() or None
+                cal = (args.get("calendar_date") or "").strip() or None
+                return self.memory_search.summarize_chat_turns_for_calendar_day(
+                    session_id=session_id,
+                    calendar_date=cal,
+                    relative=rel,
+                    max_snippets=ms,
+                )
+
             elif func_name == "create_chart":
                 if not self.visualization:
                     return {"error": "VisualizationTool not available"}

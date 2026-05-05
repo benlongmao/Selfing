@@ -137,6 +137,8 @@ class Config:
         "DB_CLEANUP_ENABLED": "db_cleanup.enabled",
         "DB_CLEANUP_RUN_ON_STARTUP": "db_cleanup.run_on_startup",
         "DB_CLEANUP_CHAT_TURNS_KEEP_DAYS": "db_cleanup.chat_turns.keep_days",
+
+        "S_CHAT_TURNS_CALENDAR_TZ": "memory.chat_turns_calendar_timezone",
         "DB_CLEANUP_PROMPT_LOGS_KEEP_DAYS": "db_cleanup.prompt_logs.keep_days",
     }
 

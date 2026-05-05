@@ -27,5 +27,5 @@ def build_tools_block(enable_tools: bool, tool_definitions: Optional[List[dict]]
     return f"""[My tools]
 This round's **available tools** are in the API ``tools`` field (names and parameters are the spec). **You choose which to call and when.** If the task needs disk reads, edits, or live state, default to calling tools first for facts, then answer; you may issue multiple ``tool_calls`` in parallel.
 To list what is attached this turn: ``list_my_tools``. To request a missing bundle: ``request_tool_group('name')``.
-{ev_line}Memory, search, calendar, PDF, etc. are also on tap as needed—follow each tool's description.
+{ev_line}Memory: for “what did we say on \<date\> / yesterday” use ``get_chat_turns_day_summary``; topic drill-down still uses ``recall_memory``. Search, calendar, PDF, etc. follow each tool description.
 Note: each turn has a tool-call budget; the system will warn you as you approach the cap."""

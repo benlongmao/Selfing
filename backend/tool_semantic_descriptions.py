@@ -334,29 +334,25 @@ TOOL_GROUPS_SEMANTIC = {
     
     "companion": {
         "description": """
-        伴侣和情感支持工具组。
-        
-        核心功能：
-        - 回忆和检索记忆
-        - 分析用户情感状态
-        - 安全风险检查
-        - 获取时间上下文
-        
-        适用场景：
-        - 理解用户情绪和情感
-        - 回忆历史对话和信息
-        - 安全性判断
-        - 情感陪伴
+        Companion and emotional-support tools.
+
+        Core capabilities:
+        - Summarize chat_turns for a calendar day (whether you spoke that day, turn counts)
+        - Broad memory recall and topic search
+        - User emotion analysis
+        - Safety risk checks
+        - Time context
+
+        Use when the user needs empathy, safety checks, or date-based “what did we say that day?” questions.
         """,
         "examples": [
-            "你还记得我之前说的吗",
-            "分析我的情绪",
-            "这个话题安全吗",
-            "理解我的感受",
-            "回忆一下",
-            "情感分析"
+            "Do you remember what I said",
+            "Did we talk yesterday",
+            "How am I coming across emotionally",
+            "Is this topic safe",
+            "Recall our last discussion",
         ],
-        "tools": ["recall_memory", "analyze_user_emotion", "check_safety_risk", "get_time_context"]
+        "tools": ["get_chat_turns_day_summary", "recall_memory", "analyze_user_emotion", "check_safety_risk", "get_time_context"]
     },
     
     "research": {
@@ -524,9 +520,15 @@ TOOL_GROUPS_SEMANTIC = {
         "tools": ["deep_research", "list_research_reports"]
     },
     "memory_recall": {
-        "description": "记忆与历史：回忆之前说的、上次、历史、日记、对话历史、知识库检索。",
-        "examples": ["之前我说过什么", "回忆一下", "查日记", "历史记录", "recall memory", "上次对话"],
-        "tools": ["recall_memory", "get_recent_context"]
+        "description": "Memory and history: verify turns for a calendar day, recall past statements, diaries, knowledge search.",
+        "examples": [
+            "What did we say yesterday",
+            "On May 1 how many turns",
+            "Recall what I told you before",
+            "Search my diary",
+            "recall memory",
+        ],
+        "tools": ["get_chat_turns_day_summary", "recall_memory", "get_recent_context"]
     },
     "visualization": {
         "description": "图表与可视化：画图、折线图、柱状图、饼图、散点图、数据展示、统计图。",

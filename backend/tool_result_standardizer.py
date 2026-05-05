@@ -263,10 +263,11 @@ def _generate_verification_reminder(
                 f"⚠️ Report exactly what ``success`` / ``error`` says — do not smooth over failures."
             )
 
-        elif tool_name in ("recall_memory", "get_recent_context"):
+        elif tool_name in ("recall_memory", "get_recent_context", "get_chat_turns_day_summary"):
             return (
                 f"✅ Memory retrieval finished.\n"
-                f"⚠️ Action logs (what was done) can be quoted directly; labeled analysis can be cited as prior reasoning without re-proving every time."
+                f"⚠️ Action logs (what was done) can be quoted directly; labeled analysis can be cited as prior reasoning without re-proving every time.\n"
+                f"If the payload includes turn_count / calendar_date, any claim about whether you spoke that day must match those fields."
             )
 
         else:

@@ -7,6 +7,11 @@ agent_evolution:
 
 memory:
   verification_threshold: high
+  # get_chat_turns_day_summary: IANA timezone for local calendar days. UTC matches legacy behavior; change if
+  # colloquial “yesterday” drifts from stored UTC midnights (e.g. America/New_York, Asia/Shanghai).
+  chat_turns_calendar_timezone: UTC
+  # When turn_count is high and max_snippets>=15, raise toward 30; explicit max_snippets<15 is never expanded.
+  chat_turns_summary_auto_expand_snippets: true
 # [2026-03-13] Re-select tools inside tool loops based on evolving context (additive only).
 # When true, from the second tool turn onward, semantic selection reruns on
 # "last user message + current reply/tool-result summary" and merges newly matched tools.
