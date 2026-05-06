@@ -1559,7 +1559,13 @@ Example: To send a diary as attachment, include attachments parameter with the f
                 return self.file_tool.read_file(filename)
                 
             elif func_name == "list_files":
-                return self.file_tool.list_files()
+                # Pass through subdir from the model; previously args were ignored → always sandbox root.
+                subdir = (
+                    (args.get("subdir") or "").strip()
+                    or (args.get("directory") or "").strip()
+                    or (args.get("path") or "").strip()
+                )
+                return self.file_tool.list_files(subdir=subdir)
                 
             elif func_name == "search_files":
                 keyword = args.get("keyword")

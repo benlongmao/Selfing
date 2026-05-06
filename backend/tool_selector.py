@@ -329,6 +329,7 @@ COMPACT_DESCRIPTIONS = {
     "copy_file": "在工作空间内复制单个文件",
     "create_directory": "在工作空间内创建目录（多级）",
     "list_files": "列出工作空间文件",
+    "execute_bash": "Restricted shell in workspace/sandbox (find/grep/ls/wc); full listing when list_files is truncated",
     "search_files": "搜索文件内容",
     "execute_python": "执行Python代码",
     "tavily_search": "网络搜索（新闻、实时信息）",

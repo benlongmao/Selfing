@@ -15,6 +15,55 @@ EVOLVED_CONTEXT_MAX_CHARS = 2200
 
 # [2026-02-24] Cap serialized tool payloads so huge list_files etc. do not blow the 112k-token window
 MAX_TOOL_RESULT_CHARS = 8000
+LIST_FILES_LLM_CAP = 50
+
+
+def _list_files_raw_result_needs_full_enum(tool_result: Dict) -> bool:
+    """Same condition as list_incomplete in _truncate_tool_result_for_llm (raw list_files payload)."""
+    if not isinstance(tool_result, dict) or tool_result.get("error"):
+        return False
+    if not tool_result.get("success"):
+        return False
+    files = tool_result.get("files")
+    if not isinstance(files, list):
+        return False
+    total_count = int(tool_result.get("total_count", len(files)))
+    tool_truncated = bool(tool_result.get("truncated", False))
+    shown_cap = min(LIST_FILES_LLM_CAP, len(files))
+    return tool_truncated or total_count > shown_cap
+
+
+def _inject_execute_bash_for_tool_loop(
+    chat_service,
+    tools: Optional[List],
+    allowed_tool_names: set,
+) -> None:
+    """Inject execute_bash only when list_files enumeration is incomplete (save tokens vs core-resident)."""
+    if not isinstance(tools, list) or len(tools) == 0:
+        logger.debug("[TOOL-LOOP] execute_bash inject skipped: no non-empty tools list")
+        return
+    if any((t.get("function") or {}).get("name") == "execute_bash" for t in tools):
+        if allowed_tool_names:
+            allowed_tool_names.add("execute_bash")
+        return
+    tr = getattr(chat_service, "tool_router", None)
+    if not tr or not getattr(tr, "bash_executor", None):
+        logger.debug("[TOOL-LOOP] execute_bash inject skipped: bash_executor unavailable")
+        return
+    try:
+        from backend.tool_selector import get_tool_selector
+
+        sel = get_tool_selector(tr)
+        sel._build_cache()
+        td = sel._get_tool_def_compact("execute_bash")
+        if not td:
+            return
+        tools.append(td)
+        if allowed_tool_names:
+            allowed_tool_names.add("execute_bash")
+        logger.info("[TOOL-LOOP] Injected execute_bash (list_files enumeration incomplete)")
+    except Exception as e:
+        logger.warning("[TOOL-LOOP] execute_bash inject failed: %s", e)
 
 
 def _truncate_tool_result_for_llm(tool_payload: Dict, max_chars: int = MAX_TOOL_RESULT_CHARS) -> str:
@@ -35,7 +84,7 @@ def _truncate_tool_result_for_llm(tool_payload: Dict, max_chars: int = MAX_TOOL_
     result = dict(result)
     payload["result"] = result
 
-    LLM_FILES_LIMIT = 50
+    LLM_FILES_LIMIT = LIST_FILES_LLM_CAP
     if "files" in result and isinstance(result["files"], list):
         all_files = result["files"]
         total_count = int(result.get("total_count", len(all_files)))
@@ -50,8 +99,11 @@ def _truncate_tool_result_for_llm(tool_payload: Dict, max_chars: int = MAX_TOOL_
             result["enumeration_warning"] = (
                 f"INCOMPLETE_ENUMERATION: total_count={total_count}, this message shows only {len(capped)} paths. "
                 "Do not infer that any file or numbered item is absent. "
-                "Verify with execute_bash_project, e.g. "
-                "`find <dir> -maxdepth 3 -name '*.md' | wc -l` or `ls -1 <dir> | sort`."
+                "Prefer **execute_bash** (cwd is workspace/sandbox; paths are relative, e.g. diaries, docs), "
+                "e.g. `find diaries -maxdepth 3 -name '*.md' | wc -l` or `ls -1 diaries | sort`; "
+                "optional **working_dir** for a subfolder. "
+                "From **S repo root** with agent evolution enabled, **execute_bash_project** works, e.g. "
+                "`find workspace/sandbox/diaries -maxdepth 3 -name '*.md' | wc -l`."
             )
 
     LLM_CONTENT_LIMIT = 3000
@@ -72,7 +124,8 @@ def _truncate_tool_result_for_llm(tool_payload: Dict, max_chars: int = MAX_TOOL_
         tc = int(result["total_count"])
         warn = result.get(
             "enumeration_warning",
-            "INCOMPLETE_ENUMERATION: path list was compressed for length; use execute_bash_project with find/wc for a full listing.",
+            "INCOMPLETE_ENUMERATION: path list was compressed; use execute_bash (sandbox) with find/wc/ls for a full listing, "
+            "or execute_bash_project from repo root if evolution is enabled.",
         )
         paths = list(result["files"])
         best_json = ""
@@ -709,6 +762,8 @@ def run_tool_loop(
         }
         messages.append(assistant_msg)
 
+        batch_need_execute_bash = False
+
         for tool_call in tool_calls:
             function_name = tool_call["function"]["name"]
             try:
@@ -744,6 +799,13 @@ def run_tool_loop(
                 session_id=session_id,
                 allowed_tool_names=allowed_tool_names or None,
             )
+
+            if (
+                function_name == "list_files"
+                and isinstance(tool_result, dict)
+                and _list_files_raw_result_needs_full_enum(tool_result)
+            ):
+                batch_need_execute_bash = True
 
             # [2026-03-20] Layer-2 lazy expansion via _expand_tools payload from router
             expand_defs = None
@@ -862,8 +924,11 @@ def run_tool_loop(
                         descs.append(
                             f"{fn}('{args['old_filename']}' → '{args['new_filename']}')"
                         )
-                    elif fn == "list_files" and args.get("path"):
-                        descs.append(f"{fn}('{args['path']}')")
+                    elif fn == "list_files" and (
+                        args.get("subdir") or args.get("path") or args.get("directory")
+                    ):
+                        lp = args.get("subdir") or args.get("path") or args.get("directory")
+                        descs.append(f"{fn}('{lp}')")
                     else:
                         descs.append(fn)
                 except Exception:
@@ -902,6 +967,9 @@ def run_tool_loop(
                 logger.info(f"[TOOL-LOOP] Reselected tools by evolved context: {len(tools)} total (merged)")
             except Exception as e:
                 logger.warning(f"[TOOL-LOOP] Reselect tools failed: {e}")
+
+        if batch_need_execute_bash:
+            _inject_execute_bash_for_tool_loop(chat_service, tools, allowed_tool_names)
 
         # [2026-02-24] Opportunistic message compression after heavy tool rounds
         # Start checking from turn 2 so list_files dumps do not stack
