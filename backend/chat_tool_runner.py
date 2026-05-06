@@ -19,43 +19,102 @@ MAX_TOOL_RESULT_CHARS = 8000
 
 def _truncate_tool_result_for_llm(tool_payload: Dict, max_chars: int = MAX_TOOL_RESULT_CHARS) -> str:
     """
-    截断超大工具结果，避免撑爆 LLM 上下文。
-    
-    设计理念：
-    - 工具层返回较完整数据（如 200 文件），供系统/用户使用
-    - LLM 层只需摘要（如 50 文件），节省 tokens
-    
-    例如 list_files 返回 200 文件 ≈ 12K 字符，截断到 50 文件 ≈ 3K 字符
+    Cap serialized tool payloads for the LLM context window.
+
+    For list_files-like results: only a subset of paths may be shown, but we always
+    preserve total_count / list_incomplete / enumeration_warning so the model does
+    not treat "not listed" as "missing". If the JSON is still too large, shrink the
+    paths array (binary search) instead of blind string truncation that drops counts.
     """
     payload = dict(tool_payload)
     result = payload.get("result")
     if not isinstance(result, dict):
         s = json.dumps(payload, ensure_ascii=False)
-        return s[:max_chars] + "\n...[结果已截断]" if len(s) > max_chars else s
+        return s[:max_chars] + "\n...[tool result truncated]" if len(s) > max_chars else s
 
-    # Trim files[] (main bloat for list_files)
-    # Tool layer may return ~200; LLM sees first 50
+    result = dict(result)
+    payload["result"] = result
+
     LLM_FILES_LIMIT = 50
     if "files" in result and isinstance(result["files"], list):
-        files = result["files"]
-        if len(files) > LLM_FILES_LIMIT:
-            result = dict(result)
-            result["files"] = files[:LLM_FILES_LIMIT]
-            result["_note"] = f"[为节省 tokens，仅展示前 {LLM_FILES_LIMIT} 个文件，共 {len(files)} 个]"
-            payload["result"] = result
+        all_files = result["files"]
+        total_count = int(result.get("total_count", len(all_files)))
+        tool_truncated = bool(result.get("truncated", False))
+        capped = all_files[:LLM_FILES_LIMIT]
+        result["files"] = capped
+        result["total_count"] = total_count
+        result["files_in_this_message"] = len(capped)
+        list_incomplete = tool_truncated or total_count > len(capped)
+        result["list_incomplete"] = list_incomplete
+        if list_incomplete:
+            result["enumeration_warning"] = (
+                f"INCOMPLETE_ENUMERATION: total_count={total_count}, this message shows only {len(capped)} paths. "
+                "Do not infer that any file or numbered item is absent. "
+                "Verify with execute_bash_project, e.g. "
+                "`find <dir> -maxdepth 3 -name '*.md' | wc -l` or `ls -1 <dir> | sort`."
+            )
 
-    # Trim content blobs (read_file, etc.)
     LLM_CONTENT_LIMIT = 3000
     if "content" in result and isinstance(result["content"], str):
         if len(result["content"]) > LLM_CONTENT_LIMIT:
-            result = dict(result)
-            result["content"] = result["content"][:LLM_CONTENT_LIMIT] + "\n...[内容已截断]"
+            result["content"] = result["content"][:LLM_CONTENT_LIMIT] + "\n...[content truncated]"
             payload["result"] = result
 
     s = json.dumps(payload, ensure_ascii=False)
-    if len(s) > max_chars:
-        return s[:max_chars] + "\n...[结果已截断]"
-    return s
+    if len(s) <= max_chars:
+        return s
+
+    if (
+        isinstance(result.get("files"), list)
+        and "total_count" in result
+        and "error" not in result
+    ):
+        tc = int(result["total_count"])
+        warn = result.get(
+            "enumeration_warning",
+            "INCOMPLETE_ENUMERATION: path list was compressed for length; use execute_bash_project with find/wc for a full listing.",
+        )
+        paths = list(result["files"])
+        best_json = ""
+        low, high = 0, len(paths)
+        while low <= high:
+            mid = (low + high) // 2
+            slim = {
+                "success": result.get("success"),
+                "total_count": tc,
+                "truncated": result.get("truncated"),
+                "list_incomplete": True,
+                "files_in_this_message": mid,
+                "enumeration_warning": warn,
+                "files": paths[:mid],
+                "current_directory": result.get("current_directory"),
+                "path_hint": result.get("path_hint"),
+                "note": result.get("note"),
+            }
+            p2 = dict(payload)
+            p2["result"] = slim
+            cand = json.dumps(p2, ensure_ascii=False)
+            if len(cand) <= max_chars:
+                best_json = cand
+                low = mid + 1
+            else:
+                high = mid - 1
+        if best_json:
+            return best_json
+        p2 = dict(payload)
+        p2["result"] = {
+            "success": result.get("success"),
+            "total_count": tc,
+            "truncated": True,
+            "list_incomplete": True,
+            "files_in_this_message": 0,
+            "files": [],
+            "enumeration_warning": warn,
+            "path_hint": result.get("path_hint"),
+        }
+        return json.dumps(p2, ensure_ascii=False)
+
+    return s[:max_chars] + "\n...[tool result truncated]"
 
 
 # ============================================================

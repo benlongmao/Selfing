@@ -51,6 +51,15 @@ try:
     model_provider = config.get('system', {}).get('model_provider', '')
     if model_provider and not os.environ.get('MODEL_PROVIDER'):
         print(f'export MODEL_PROVIDER="{model_provider}"')
+
+    # heartbeat (for manage_services vs legacy scripts/heartbeat.py)
+    system_config = config.get('system', {})
+    heartbeat_enabled = system_config.get('heartbeat_enabled')
+    if heartbeat_enabled is not None and not os.environ.get('HEARTBEAT_ENABLED'):
+        print(f'export HEARTBEAT_ENABLED="{str(heartbeat_enabled).lower()}"')
+    heartbeat_interval = system_config.get('heartbeat_interval')
+    if heartbeat_interval is not None and not os.environ.get('HEARTBEAT_INTERVAL'):
+        print(f'export HEARTBEAT_INTERVAL="{heartbeat_interval}"')
     
     # deepseek block
     deepseek_config = config.get('models', {}).get('deepseek', {})
@@ -120,8 +129,8 @@ fi
 VLLM_PORT="${VLLM_PORT:-8000}"
 BACKEND_PORT="${BACKEND_PORT:-8080}"
 
-# Default vLLM client settings (when talking to a local server)
-VLLM_API_KEY="${VLLM_API_KEY:-token-abc123}"
+# Default vLLM client: do not assume token-abc123 for remote gateways (stable 401). Local vLLM gets a placeholder below.
+VLLM_API_KEY="${VLLM_API_KEY:-}"
 VLLM_BASE_URL="${VLLM_BASE_URL:-http://localhost:${VLLM_PORT}/v1}"
 # Fallback only if unset in settings.yaml / .env; chat timeouts follow app config
 VLLM_TIMEOUT="${VLLM_TIMEOUT:-600}"
@@ -134,6 +143,9 @@ DEEPSEEK_API_KEY="${DEEPSEEK_API_KEY:-}"
 OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://api.openai.com/v1}"
 OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+HEARTBEAT_ENABLED="$(echo "${HEARTBEAT_ENABLED:-true}" | tr '[:upper:]' '[:lower:]')"
+HEARTBEAT_INTERVAL="${HEARTBEAT_INTERVAL:-1800}"
+LEGACY_HEARTBEAT_SCRIPT="$(echo "${LEGACY_HEARTBEAT_SCRIPT:-false}" | tr '[:upper:]' '[:lower:]')"
 # [disabled] Kimi — kept for future switch
 # KIMI_BASE_URL="${KIMI_BASE_URL:-https://api.moonshot.cn/v1}"
 # KIMI_MODEL="${KIMI_MODEL:-kimi-k2.5}"
@@ -215,8 +227,8 @@ case "${MODEL_PROVIDER}" in
     else
       IS_LOCAL_PROVIDER="false"
       PROVIDER_NAME="OpenAI-compatible API (remote gateway)"
-      if [[ -z "${VLLM_API_KEY}" || "${VLLM_API_KEY}" == "token-abc123" ]]; then
-        echo "⚠️  VLLM_API_KEY missing or placeholder; set a real key in .env (e.g. sk-... for Aiberm)."
+      if [[ -z "${VLLM_API_KEY}" ]]; then
+        echo "⚠️  VLLM_API_KEY missing; set a real key in .env (e.g. sk-... for Aiberm)."
       fi
       if [[ -z "${VLLM_BASE_URL:-}" ]]; then
         echo "⚠️  VLLM_BASE_URL unset; set it in .env (e.g. https://aiberm.com/v1)."
@@ -242,6 +254,11 @@ case "${MODEL_PROVIDER}" in
     ;;
 esac
 
+# Local vLLM server still needs some API key string; remote providers must set a real key in .env
+if [[ "${IS_LOCAL_PROVIDER}" == "true" ]] && [[ -z "${VLLM_API_KEY:-}" ]]; then
+  VLLM_API_KEY="token-abc123"
+fi
+
 # Optional tools
 TAVILY_API_KEY="${TAVILY_API_KEY:-}"
 
@@ -258,6 +275,7 @@ mkdir -p "${LOG_DIR}" "${PID_DIR}"
 # ============================================
 export TAVILY_API_KEY
 export DB_PATH
+export MODEL_PROVIDER
 export VLLM_BASE_URL
 export VLLM_API_KEY
 export MODEL_ID
@@ -322,6 +340,35 @@ detect_model_path() {
   return 1
 }
 
+# Per-probe timeouts: without --max-time, a zombie listener can make curl hang indefinitely.
+CURL_CONNECT_TIMEOUT="${CURL_CONNECT_TIMEOUT:-3}"
+CURL_MAX_TIME="${CURL_MAX_TIME:-8}"
+
+_curl_probe() {
+  local url=$1
+  local header=$2
+  if [[ -n "${header}" ]]; then
+    curl -sSf --connect-timeout "${CURL_CONNECT_TIMEOUT}" --max-time "${CURL_MAX_TIME}" \
+      -H "${header}" "${url}" >/dev/null 2>&1
+  else
+    curl -sSf --connect-timeout "${CURL_CONNECT_TIMEOUT}" --max-time "${CURL_MAX_TIME}" \
+      "${url}" >/dev/null 2>&1
+  fi
+}
+
+backend_port_in_use() {
+  local port=$1
+  if command -v ss >/dev/null 2>&1; then
+    ss -tln 2>/dev/null | grep -qE ":${port}\\s" && return 0
+    return 1
+  fi
+  if command -v netstat >/dev/null 2>&1; then
+    netstat -tln 2>/dev/null | grep -qE ":${port}\\s" && return 0
+    return 1
+  fi
+  return 1
+}
+
 wait_for_service() {
   local url=$1
   local header=$2
@@ -331,12 +378,12 @@ wait_for_service() {
   echo "⏳  Waiting for ${name} at ${url} ..."
   for ((i=0; i<timeout; i++)); do
     if [[ -n "${header}" ]]; then
-      if curl -sSf -H "${header}" "${url}" >/dev/null 2>&1; then
+      if _curl_probe "${url}" "${header}"; then
         echo "✅ ${name} is ready"
         return 0
       fi
     else
-      if curl -sSf "${url}" >/dev/null 2>&1; then
+      if _curl_probe "${url}" ""; then
         echo "✅ ${name} is ready"
         return 0
       fi
@@ -468,27 +515,40 @@ detect_model_id() {
 }
 
 start_heartbeat() {
+  if [[ "${HEARTBEAT_ENABLED}" != "true" ]]; then
+    echo "ℹ️  Heartbeat disabled in settings/.env (HEARTBEAT_ENABLED=${HEARTBEAT_ENABLED}); skipping legacy heartbeat script."
+    return 0
+  fi
+
+  if [[ "${LEGACY_HEARTBEAT_SCRIPT}" != "true" ]]; then
+    echo "ℹ️  Using in-app HeartbeatService (interval=${HEARTBEAT_INTERVAL}s); not starting scripts/heartbeat.py."
+    return 0
+  fi
+
   if is_process_alive "${HEARTBEAT_PID_FILE}" >/dev/null; then
     echo "ℹ️  Heartbeat already running (PID $(cat "${HEARTBEAT_PID_FILE}"))"
     return 0
   fi
 
-  echo "▶️  Starting heartbeat service (presence / HEARTBEAT.md)"
-  
+  echo "▶️  Starting legacy heartbeat script (compatibility mode)"
+
   local python_cmd
   if [[ -f "${ROOT_DIR}/.venv/bin/python" ]]; then
     python_cmd="${ROOT_DIR}/.venv/bin/python"
   else
     python_cmd="python3"
   fi
-  
-  nohup "${python_cmd}" "${ROOT_DIR}/scripts/heartbeat.py" \
+
+  nohup env \
+    "API_BASE=http://localhost:${BACKEND_PORT}" \
+    "HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}" \
+    "${python_cmd}" "${ROOT_DIR}/scripts/heartbeat.py" \
     > "${LOG_DIR}/heartbeat.log" 2>&1 &
-    
+
   local pid=$!
   echo "${pid}" > "${HEARTBEAT_PID_FILE}"
   echo "   PID: ${pid}"
-  echo "   ✅ Heartbeat started (interval: 300s)"
+  echo "   ✅ Legacy heartbeat started (interval: ${HEARTBEAT_INTERVAL}s)"
 }
 
 start_backend() {
@@ -545,7 +605,7 @@ start_backend() {
     return 1
   fi
 
-  # Syntax-check backend before uvicorn (no import); abort on failure
+  # Syntax + import checks (cold start is slower; use SKIP_* to bypass — see usage)
   if [[ "${SKIP_BACKEND_SYNTAX_CHECK:-false}" != "true" ]]; then
     echo "⏳  compileall syntax check on backend/ ..."
     if ! bash "${ROOT_DIR}/scripts/check_backend.sh"; then
@@ -556,7 +616,28 @@ start_backend() {
   else
     echo "ℹ️  Skipping backend syntax check (SKIP_BACKEND_SYNTAX_CHECK=true)"
   fi
-  
+
+  if [[ "${SKIP_BACKEND_IMPORT_CHECK:-false}" != "true" ]]; then
+    echo "⏳  Verifying import backend.app (same load path as uvicorn) ..."
+    if ! bash "${ROOT_DIR}/scripts/verify_backend_imports.sh"; then
+      echo "❌ Backend import check failed; aborting start."
+      echo "   To skip (not recommended): export SKIP_BACKEND_IMPORT_CHECK=true"
+      return 1
+    fi
+  else
+    echo "ℹ️  Skipping backend import check (SKIP_BACKEND_IMPORT_CHECK=true)"
+  fi
+
+  if backend_port_in_use "${BACKEND_PORT}"; then
+    echo "❌ Backend port ${BACKEND_PORT} is already in use."
+    echo "   Stop the old process first: $(basename "$0") stop"
+    echo "   Listener:"
+    if command -v ss >/dev/null 2>&1; then
+      ss -tlnp 2>/dev/null | grep -E ":${BACKEND_PORT}\\s" || true
+    fi
+    return 1
+  fi
+
   export DB_PATH
   export VLLM_BASE_URL
   export VLLM_API_KEY
@@ -571,6 +652,7 @@ start_backend() {
   
   local env_vars=(
     "DB_PATH=${DB_PATH}"
+    "MODEL_PROVIDER=${MODEL_PROVIDER}"
     "VLLM_BASE_URL=${VLLM_BASE_URL}"
     "VLLM_API_KEY=${VLLM_API_KEY}"
     "MODEL_ID=${model_id}"
@@ -751,6 +833,7 @@ cmd_stop() {
   
   echo "🧹  Cleaning stray processes..."
   pkill -f "uvicorn backend.app:app" >/dev/null 2>&1 || true
+  pkill -f "python -m uvicorn backend.app:app" >/dev/null 2>&1 || true
   pkill -f "scripts/heartbeat.py" >/dev/null 2>&1 || true
   pkill -f "vllm.entrypoints.openai.api_server" >/dev/null 2>&1 || true
   pkill -f "VLLM::EngineCore" >/dev/null 2>&1 || true
@@ -801,7 +884,7 @@ usage() {
 Usage: $(basename "$0") [start|stop|status|restart|open]
 
 Commands:
-  start    Start vLLM (if local), backend, heartbeat, and open the web UI
+  start    Start vLLM (if local), backend, optional legacy heartbeat, open the web UI
   stop     Stop all managed services
   status   Show PIDs and log paths
   restart  stop then start
@@ -818,6 +901,15 @@ Environment:
     VLLM_BASE_URL    Upstream OpenAI-compatible base URL
     VLLM_API_KEY     Bearer token for that upstream
     MODEL_ID         Model name / HF id for routing
+    HEARTBEAT_ENABLED        true|false (default true) — when false, skip scripts/heartbeat.py
+    HEARTBEAT_INTERVAL       seconds (default 1800) — passed to legacy script if used
+    LEGACY_HEARTBEAT_SCRIPT  true|false (default false) — true = run scripts/heartbeat.py; false = rely on in-app HeartbeatService
+
+  Optional tuning:
+    SKIP_BACKEND_SYNTAX_CHECK   true = skip compileall (faster, not recommended)
+    SKIP_BACKEND_IMPORT_CHECK   true = skip import backend.app preflight
+    SKIP_HEARTBEAT              true = skip start_heartbeat branch entirely
+    CURL_CONNECT_TIMEOUT / CURL_MAX_TIME   per-probe limits for health checks (defaults: 3 / 8 seconds)
 
 Examples:
   $0 start
