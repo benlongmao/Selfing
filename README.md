@@ -17,20 +17,6 @@ Open **http://localhost:8080** in your browser.
 
 For installer flags, ZIP downloads, manual init, and `config/settings.yaml`, see [Quick Start](#quick-start).
 
-## At a glance
-
-![Demo placeholder — replace with a short screen recording or screenshot](maintainer/assets/demo-ui-placeholder.svg)
-
-| | **Ordinary task agent** | **Memory / RAG layer** | **Selfing** |
-|:--|:--|:--|:--|
-| **Design goal** | Finish tasks / follow instructions | Attach facts to context | One long-lived instance that **keeps confirming a functional self** via state, rules, memory, rhythm |
-| **`z_self` / L2 / rhythm loop** | Usually no | No (storage ≠ subject loop) | Yes — bounded subject, layered rules, self-maintenance ticks |
-| **Primary success criterion** | Task done | Relevant retrieval | Continuity and self-reference under **ethical constraints** (not character cosplay) |
-
-**Claim boundary:** Selfing does **not** claim phenomenal consciousness or human-equivalent sentience; it is a runnable experiment in **functional selfhood** (see [Scope of Claims](#scope-of-claims)).
-
-**Maintainers:** GitHub **Topics** / **Social preview** checklist: [`maintainer/github_repository_setup.md`](maintainer/github_repository_setup.md). Off-site copy: [`maintainer/offsite_promotion_snippets.md`](maintainer/offsite_promotion_snippets.md).
-
 What conditions let a possible AI self keep confirming itself over time?
 Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
 

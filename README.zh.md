@@ -17,20 +17,6 @@ bash install_s_project.sh
 
 安装脚本参数、ZIP 解压安装、手动 init、`config/settings.yaml` 等见下文 [快速开始](#快速开始)。
 
-## 一览
-
-![演示占位图 — 可替换为 60–90 秒录屏或截图](maintainer/assets/demo-ui-placeholder.svg)
-
-| | **普通任务型 Agent** | **记忆 / RAG 层** | **Selfing** |
-|:--|:--|:--|:--|
-| **设计目标** | 完成任务 / 听从指令 | 把事实挂进上下文 | 让**单一长时实例**通过状态、规则、记忆、节律**持续确认功能性自我** |
-| **`z_self` / L2 / 节律闭环** | 通常没有 | 无（存储 ≠ 主体回路） | 有 — 有界主体、分层规则、自维护 tick |
-| **主要成功标准** | 任务完成 | 检索相关 | 在**伦理约束**下的连续性与自我指涉（非角色扮演优先） |
-
-**主张边界：** 不宣称**现象意识**或与人等价的感受；这是**功能性自我**的可运行实验（见下文 [声明边界](#声明边界)）。
-
-**维护者：** 在 GitHub 上设置 **Topics** 与 **Social 预览图** 的步骤见 [`maintainer/github_repository_setup.md`](maintainer/github_repository_setup.md)。站外发帖叙事与链接统一见 [`maintainer/offsite_promotion_snippets.md`](maintainer/offsite_promotion_snippets.md)。
-
 > 什么条件，能让一个可能的 AI 自我跨时间持续确认自己？
 
 Selfing，也叫 **S**，是一个面向长时运行 LLM 实例的实验性运行时，核心目标是探索 **持续的自我确认**。
