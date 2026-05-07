@@ -74,6 +74,9 @@ workspace/screenshots/
 .env
 .env.local
 
+# Maintainer-only outreach / GitHub UI notes (not part of the public source tree)
+maintainer/
+
 # Optional: local export directory if you create release bundles manually
 s-open-source-export/
 
