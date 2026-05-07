@@ -24,8 +24,8 @@ models:
   # Request fields thinking + reasoning_effort are written by backend/deepseek_api_params.py.
   deepseek:
     base_url: https://api.deepseek.com/v1
-    model_id: deepseek-v4-flash    # Main chat model; thinking_enabled=true uses thinking mode.
-    model_id_lite: deepseek-v4-flash  # Lightweight tasks; lite_thinking_enabled=false sends thinking.disabled.
+    model_id: deepseek-v4-pro    # Main chat model; thinking_enabled=true uses thinking mode.
+    model_id_lite: deepseek-v4-pro  # Lightweight tasks; lite_thinking_enabled=false sends thinking.disabled.
     timeout: 1800                  # Read timeout per response, in seconds; keep high for long reasoning/tool loops.
     connect_timeout: 45            # TCP connect timeout; combined with timeout as (connect, read).
     completion_retries: 3          # Retry partial transport / truncated JSON failures for DeepSeek API.
