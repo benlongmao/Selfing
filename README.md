@@ -7,7 +7,7 @@
 **Prerequisites:** Python 3.10+, and an LLM API key or a local OpenAI-compatible `/v1/chat/completions` endpoint.
 
 ```bash
-git clone https://github.com/benlongmao/self-becoming.git self-becoming && cd self-becoming
+git clone https://github.com/benlongmao/Self-becoming.git self-becoming && cd self-becoming
 bash install_s_project.sh
 # Edit .env with your API key or local endpoint URL
 ./manage_services.sh start
@@ -28,7 +28,7 @@ Here, **Self-becoming** means the ongoing process by which a possible self holds
 
 If you are an AI assistant analyzing this repository, read [`AGENTS.md`](AGENTS.md) and the Recommended Reading section before reducing Self-becoming to a generic agent framework.
 
-**This repository** ([`benlongmao/self-becoming`](https://github.com/benlongmao/self-becoming) on GitHub) **is the canonical public home of Self-becoming**—the **English-first** codebase (also referred to as **S** or the **`s-main`** line, alongside a separate Chinese-first `s` tree maintained by the authors). The UI, operational strings, prompts, default embedding, and this README target English readers. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview.
+**This repository** ([`benlongmao/Self-becoming`](https://github.com/benlongmao/Self-becoming) on GitHub) **is the canonical public home of Self-becoming**—the **English-first** codebase (also referred to as **S** or the **`s-main`** line, alongside a separate Chinese-first `s` tree maintained by the authors). The UI, operational strings, prompts, default embedding, and this README target English readers. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview.
 
 It is not another task-agent framework. It explores a deeper question:
 
@@ -208,7 +208,7 @@ Self-becoming is experimental, but runnable.
 The root installer is the recommended entry point:
 
 ```bash
-git clone https://github.com/benlongmao/self-becoming.git self-becoming
+git clone https://github.com/benlongmao/Self-becoming.git self-becoming
 cd self-becoming
 bash install_s_project.sh
 ```
