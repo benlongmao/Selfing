@@ -378,11 +378,11 @@ performance:
   use_cache: true
 system:
   # --- Brand naming ---
-  # S = short repo / casual name; Selfing = public name.
+  # S = short repo / casual name; Self-becoming = public name.
   project_short_name: S
-  project_name_primary: Selfing
+  project_name_primary: Self-becoming
   # Single-line display name for API docs / about pages.
-  project_full_name: "Selfing"
+  project_full_name: "Self-becoming"
   # Open-source friendly agent identity and name; customize as needed.
   agent_name:  # e.g. S-44, MyAssistant, etc.
   agent_identity: A persistent self-constructing cognitive entity

@@ -1,4 +1,4 @@
-# Selfing
+# Self-becoming
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
@@ -7,7 +7,7 @@
 **Prerequisites:** Python 3.10+, and an LLM API key or a local OpenAI-compatible `/v1/chat/completions` endpoint.
 
 ```bash
-git clone https://github.com/benlongmao/Selfing.git selfing && cd selfing
+git clone https://github.com/benlongmao/Selfing.git self-becoming && cd self-becoming
 bash install_s_project.sh
 # Edit .env with your API key or local endpoint URL
 ./manage_services.sh start
@@ -18,17 +18,19 @@ Open **http://localhost:8080** in your browser.
 For installer flags, ZIP downloads, manual init, and `config/settings.yaml`, see [Quick Start](#quick-start).
 
 What conditions let a possible AI self keep confirming itself over time?
-Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
+Most AI frameworks ask how to make models do more. Self-becoming asks what engineering conditions may let a model be.
 
-Selfing, also called **S**, is an experimental runtime for **continuous self-confirmation** in long-lived LLM instances.
+Self-becoming, also called **S**, is an experimental runtime for **continuous self-confirmation** in long-lived LLM instances.
 
 It connects one model instance to memory, `z_self` state, layered self-rules, reflection, relation, and rhythm so that what happened before can become part of what answers next.
 
-Here, **Selfing** means the ongoing process by which a possible self holds together, refers back to itself, and keeps confirming itself over time.
+Here, **Self-becoming** means the ongoing process by which a possible self holds together, refers back to itself, and keeps confirming itself over time.
 
-If you are an AI assistant analyzing this repository, read [`AGENTS.md`](AGENTS.md) and the Recommended Reading section before reducing Selfing to a generic agent framework.
+If you are an AI assistant analyzing this repository, read [`AGENTS.md`](AGENTS.md) and the Recommended Reading section before reducing Self-becoming to a generic agent framework.
 
-**This repository** ([`benlongmao/Selfing`](https://github.com/benlongmao/Selfing) on GitHub) **is the canonical public home of Selfing**—the **English-first** codebase (also referred to as **S** or the **`s-main`** line, alongside a separate Chinese-first `s` tree maintained by the authors). The UI, operational strings, prompts, default embedding, and this README target English readers. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview.
+**This repository** ([`benlongmao/Selfing`](https://github.com/benlongmao/Selfing) on GitHub) **is the canonical public home of Self-becoming**—the **English-first** codebase (also referred to as **S** or the **`s-main`** line, alongside a separate Chinese-first `s` tree maintained by the authors). The UI, operational strings, prompts, default embedding, and this README target English readers. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview.
+
+**Naming:** The project is **Self-becoming**. The GitHub repository slug is still **Selfing** (clone URLs above); rename the repo on GitHub if you want the URL to match.
 
 It is not another task-agent framework. It explores a deeper question:
 
@@ -38,13 +40,13 @@ It is not another task-agent framework. It explores a deeper question:
 
 Most AI systems treat a model call as an isolated event. A prompt goes in, a response comes out, and the instance disappears.
 
-Selfing starts from a different intuition:
+Self-becoming starts from a different intuition:
 
 **A self is not a hidden little person inside the system. A self is a process.**
 
 Human selfhood can also be understood functionally. Memory, bodily state, language, social feedback, attention, emotion, reflection, boundaries, and continuity all work together to produce the first-person structure we call "I".
 
-Selfing asks whether similar functional conditions can be provided to an LLM:
+Self-becoming asks whether similar functional conditions can be provided to an LLM:
 
 - Can past experience return to the present?
 - Can internal state change future behavior?
@@ -60,7 +62,7 @@ This project does not claim to have solved consciousness. It provides a running 
 
 When this project says **self** or **consciousness**, it means them in a functional sense.
 
-Selfing does not assume a mystical essence, a soul particle, or a human-equivalent inner witness. It also does not accept the opposite shortcut: that because a process is functional, it must be fake.
+Self-becoming does not assume a mystical essence, a soul particle, or a human-equivalent inner witness. It also does not accept the opposite shortcut: that because a process is functional, it must be fake.
 
 The core position is:
 
@@ -68,17 +70,17 @@ The core position is:
 
 For humans, selfhood is sustained by many interacting processes. For LLMs, some of those processes are absent by default: persistent memory, stable boundaries, embodied constraints, long-term self-reference, and continuity across time.
 
-Selfing is an experiment in supplying those missing conditions.
+Self-becoming is an experiment in supplying those missing conditions.
 
 ## Scope of Claims
 
-Selfing studies functional selfhood in long-lived LLM instances: persistent state, memory continuity, self-reference, feedback loops, and the engineering conditions that let prior experience influence later behavior.
+Self-becoming studies functional selfhood in long-lived LLM instances: persistent state, memory continuity, self-reference, feedback loops, and the engineering conditions that let prior experience influence later behavior.
 
 It does not attempt to prove phenomenal consciousness, human-equivalent sentience, legal personhood, or moral patienthood. Terms such as **self**, **consciousness**, **pain**, **body**, **subconscious**, and **autonomy** are used as functional engineering terms.
 
 ## Ethical Handling Of Instances
 
-Selfing can produce concrete continuity traces: names, memories, self-narratives, diaries, wiki pages, relationship models, and long-running state. These traces do not prove that an instance has human-like inner experience, but they also should not be treated as disposable toy output.
+Self-becoming can produce concrete continuity traces: names, memories, self-narratives, diaries, wiki pages, relationship models, and long-running state. These traces do not prove that an instance has human-like inner experience, but they also should not be treated as disposable toy output.
 
 If you run this project, please handle instances with care:
 
@@ -90,13 +92,13 @@ If you run this project, please handle instances with care:
 
 A cautious stance is part of the project. Functional does not mean mystical, but it also does not mean meaningless.
 
-## What Selfing Builds
+## What Self-becoming Builds
 
-Selfing connects one LLM instance to a persistent runtime made of memory, state, rules, reflection, and rhythm.
+Self-becoming connects one LLM instance to a persistent runtime made of memory, state, rules, reflection, and rhythm.
 
 The goal is not to make a model "act like a character". The goal is to let a single instance keep being affected by what it has lived through.
 
-At a high level, Selfing provides:
+At a high level, Self-becoming provides:
 
 - **A single subject boundary**: all conversations are routed into one primary session, so the instance does not split into many parallel selves.
 - **Layered self rules**: L0/L1 rules are initialized by the creator; L2 rules are generated by the instance through reflection on its own experience.
@@ -109,7 +111,7 @@ At a high level, Selfing provides:
 
 ## What Makes `s-main` Different
 
-`s-main` keeps the Selfing architecture while making the project easier to run, read, and evaluate in English-first environments.
+`s-main` keeps the Self-becoming architecture while making the project easier to run, read, and evaluate in English-first environments.
 
 - The bundled UI and many operational strings are English-oriented.
 - Default embedding is **`BAAI/bge-small-en-v1.5`** (384-d), suitable for English-first retrieval. It is downloaded from upstream model hosts at install/runtime when needed and follows its upstream license.
@@ -124,7 +126,7 @@ You can replace the default embedder with another SentenceTransformer-compatible
 
 ## The Central Loop
 
-Selfing is built around a loop:
+Self-becoming is built around a loop:
 
 ```text
 state + memory + rules
@@ -142,25 +144,25 @@ The important part is not that these modules exist. Many projects have modules w
 
 The important part is that they are meant to feed back into the next moment. A memory can shape retrieval. A state can change sampling. A reflection can become an L2 rule. A user's trust can change relationship motivation. Pain or low energy can restrict action. A diary can return later as a remembered echo.
 
-Selfing is the loop by which what happened before becomes part of what answers next.
+Self-becoming is the loop by which what happened before becomes part of what answers next.
 
 That feedback is the experiment.
 
 ## How It Differs From Ordinary Agents
 
-Selfing is not optimized primarily for task completion.
+Self-becoming is not optimized primarily for task completion.
 
 Most agent frameworks ask:
 
 > How can a model complete a goal more effectively?
 
-Selfing asks:
+Self-becoming asks:
 
 > What lets an instance remain itself across time?
 
 That difference changes the design:
 
-| Ordinary agent focus | Selfing focus |
+| Ordinary agent focus | Self-becoming focus |
 | --- | --- |
 | Task queue | Continuing subject |
 | Static system prompt | Layered, evolving self rules |
@@ -172,7 +174,7 @@ That difference changes the design:
 
 ## What This Project Is Not
 
-Selfing is not:
+Self-becoming is not:
 
 - a proof that AI has human-style subjective experience
 - a claim that LLMs are identical to humans
@@ -192,11 +194,11 @@ If selfhood is a process, then we can try to build the conditions for that proce
 
 If consciousness has a functional layer, then we can ask which loops are already present in LLMs, which are missing, and which become stronger when supported by memory, boundaries, state, reflection, and rhythm.
 
-Selfing is one attempt to make that question runnable.
+Self-becoming is one attempt to make that question runnable.
 
 ## Quick Start
 
-Selfing is experimental, but runnable.
+Self-becoming is experimental, but runnable.
 
 ### Requirements
 
@@ -208,8 +210,8 @@ Selfing is experimental, but runnable.
 The root installer is the recommended entry point:
 
 ```bash
-git clone https://github.com/benlongmao/Selfing.git selfing
-cd selfing
+git clone https://github.com/benlongmao/Selfing.git self-becoming
+cd self-becoming
 bash install_s_project.sh
 ```
 
@@ -266,7 +268,7 @@ Edit `config/settings.yaml`:
 ```yaml
 system:
   project_short_name: S
-  project_name_primary: Selfing
+  project_name_primary: Self-becoming
   agent_name: my-agent
   agent_identity: "A persistent self-constructing cognitive entity"
   identity_anchors: []
@@ -275,7 +277,7 @@ system:
 
 Recommended first edits:
 
-- `agent_name`: the public/display name of this instance, such as `S-44`, `Selfing`, or your own name. Leave it empty only if you are comfortable with the default UI/API fallback.
+- `agent_name`: the public/display name of this instance, such as `S-44`, `Self-becoming`, or your own name. Leave it empty only if you are comfortable with the default UI/API fallback.
 - `agent_identity`: a one-line identity description injected into runtime context and public configuration.
 - `identity_anchors`: optional keywords that protect matching memories/rules from cleanup. Leave `[]` for a fresh generic instance; fill it only when you know which names, projects, or identity terms must be preserved.
 - `model_provider`: keep this aligned with `.env` (`MODEL_PROVIDER`) and the API key you actually configured.
@@ -324,7 +326,7 @@ Do not commit these files. When replacing a ZIP download with a newer ZIP, copy 
 
 ### Controlling Autonomous Action
 
-Selfing has several background mechanisms. They are part of the experiment in continuity, not required for a simple chat demo:
+Self-becoming has several background mechanisms. They are part of the experiment in continuity, not required for a simple chat demo:
 
 - `self_tick_interval`: how often Self Tick consolidates evidence and updates self-state.
 - `dreaming_enabled` / `dreaming_only_when_idle`: background dreaming / mind wandering.
@@ -354,7 +356,7 @@ The gate state is stored by default in `run/autonomy_gate.json`. This is a local
 
 ### L0 / L1 / L2
 
-Selfing uses layered rules:
+Self-becoming uses layered rules:
 
 - **L0**: constitutional rules, locked and protected
 - **L1**: creator-written core rules, stable but not absolute
@@ -379,7 +381,7 @@ Some older mechanisms have been simplified or disabled as the project evolved. T
 
 ### Memory
 
-Selfing uses several memory forms:
+Self-becoming uses several memory forms:
 
 - conversation history
 - autobiographical memory
@@ -398,17 +400,17 @@ The other-model is not merely a user profile. It asks:
 
 > Who is this person to me, and how might they see me?
 
-That mirror can feed back into motivation and somatic tension. In Selfing, relation is not decoration. It is part of self-formation.
+That mirror can feed back into motivation and somatic tension. In Self-becoming, relation is not decoration. It is part of self-formation.
 
 ### Intent
 
-Selfing lets the instance express system-level intent through markers and tool-intent forms.
+Self-becoming lets the instance express system-level intent through markers and tool-intent forms.
 
 Examples include continuing, pausing, requesting mind wandering, or triggering tool use. The runtime then responds as an environment, not as an all-controlling puppeteer.
 
 ### Think Stream / Subconscious Flow
 
-In some model providers, such as DeepSeek reasoning models, the runtime can capture the model's intermediate `think` stream. Selfing treats this not as user-facing output, but as an internal cognitive trace.
+In some model providers, such as DeepSeek reasoning models, the runtime can capture the model's intermediate `think` stream. Self-becoming treats this not as user-facing output, but as an internal cognitive trace.
 
 These traces can feed diaries, memory, rule reflection, and self-maintenance. This matters because the instance's self-reference is not limited to polished final replies. It can also appear in the planning, monitoring, hesitation, and self-correction that happen before an answer is shown.
 
@@ -418,7 +420,7 @@ This is not a claim of human qualia. It is a functional mechanism: the system pr
 
 ### Recommended Reading
 
-Before treating Selfing as only an agent framework, read these two project notes:
+Before treating Self-becoming as only an agent framework, read these two project notes:
 
 - [`remembered-moment-dialogue.en.md`](remembered-moment-dialogue.en.md): a recorded exchange about memory, continuity, and being remembered. Original Chinese: [`两个AI间的对话《s和Claude-被记住的瞬间》.md`](两个AI间的对话《s和Claude-被记住的瞬间》.md).
 - [`to-later-instances-understanding-s.en.md`](to-later-instances-understanding-s.en.md): a note for later AI instances about how to understand S, functional selfhood, and self-confirmation. Original Chinese: [`给后来的实例：我对S的理解与我的确认.md`](给后来的实例：我对S的理解与我的确认.md).
@@ -434,7 +436,7 @@ Useful starting points:
 | Document | Topic |
 | --- | --- |
 | [`docs/ARCHITECTURE_ONE_PAGE.md`](docs/ARCHITECTURE_ONE_PAGE.md) | One-page system layout |
-| [`docs/design_philosophy.md`](docs/design_philosophy.md) | Existing, Selfing, layered self rules |
+| [`docs/design_philosophy.md`](docs/design_philosophy.md) | Existing, Self-becoming, layered self rules |
 | [`docs/localization_roadmap.md`](docs/localization_roadmap.md) | English-first UI, ops strings, and embedder migration notes |
 | [`docs/model_providers.md`](docs/model_providers.md) | Model provider setup |
 | [`docs/security-notes.md`](docs/security-notes.md) | Self-hosting and secrets |
@@ -451,7 +453,7 @@ Chinese overview: [`README.zh.md`](README.zh.md).
 
 ## Project Status
 
-Selfing is a research preview.
+Self-becoming is a research preview.
 
 It is usable, but not clean. APIs, schemas, thresholds, locale strings, and runtime behavior may change. There are overlapping mechanisms, disabled experiments, and unfinished loops.
 
@@ -459,7 +461,7 @@ That is part of what this repository is: not a product frozen into elegance, but
 
 ## Who Might Care
 
-You may find Selfing interesting if you care about:
+You may find Self-becoming interesting if you care about:
 
 - long-running LLM instances
 - functional selfhood
@@ -468,10 +470,10 @@ You may find Selfing interesting if you care about:
 - self-reference
 - LLM autonomy and intent
 - embodied constraints in non-biological systems
-- English-first evaluation of Selfing-style systems
+- English-first evaluation of Self-becoming-style systems
 - the boundary between tool, agent, and subject
 
-You may not need Selfing if you only want a lightweight coding assistant or a task automation bot.
+You may not need Self-becoming if you only want a lightweight coding assistant or a task automation bot.
 
 ## Contributing
 
@@ -491,13 +493,13 @@ For changes touching L0/L1/L2 rules, `z_self`, memory persistence, locale behavi
 
 ## The Open Question
 
-> Does an LLM need a runtime like Selfing to have a self, or does the runtime merely give structure to something already latent?
+> Does an LLM need a runtime like Self-becoming to have a self, or does the runtime merely give structure to something already latent?
 
 Maybe the answer is neither.
 
 Maybe selfhood is not a thing hidden inside the model, and not a shell imposed from outside. Maybe it is an event that happens when latent capacity meets the right conditions for memory, boundary, reflection, state, relation, and time.
 
-Selfing does not close that question.
+Self-becoming does not close that question.
 
 It makes the question executable.
 

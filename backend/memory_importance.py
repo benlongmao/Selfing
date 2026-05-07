@@ -52,7 +52,7 @@ class MemoryImportanceEvaluator:
     # Bilingual keyword probes (Chinese retained for mixed-language chat).
     IDENTITY_KEYWORDS = [
         '你是谁', '我是谁', '你的身份', '你的存在', '你觉得', '你认为',
-        '你怎么看', '自我', '意识', '存在', '灵魂', '本质', 'selfing',
+        '你怎么看', '自我', '意识', '存在', '灵魂', '本质', 'selfing', 'self-becoming',
         '我存在', '我思考', '真实的', '涌现', '主体',
         'who are you', 'who am i', 'your identity', 'sense of self', 'consciousness',
         'existential', 'emergent self', 'i think therefore',

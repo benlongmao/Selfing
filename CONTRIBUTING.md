@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Selfing. This project is **experimental** and English-first in `docs/` and the default UI.
+Thanks for helping improve Self-becoming. This project is **experimental** and English-first in `docs/` and the default UI.
 
 ## Issues and discussion
 
@@ -14,7 +14,7 @@ Thanks for helping improve Selfing. This project is **experimental** and English
 3. Run Python checks locally when your change touches memory or chat paths:
 
 ```bash
-cd /path/to/selfing
+cd /path/to/self-becoming
 export PYTHONPATH=.
 python3 -m py_compile backend/user_fact_capture.py backend/unified_memory.py
 python3 -m unittest backend.test_memory_helpers -v

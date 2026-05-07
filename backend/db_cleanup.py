@@ -453,7 +453,7 @@ def run_scheduled_cleanup(db_path: str = "data.db") -> Dict:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="S / Selfing SQLite maintenance utility")
+    parser = argparse.ArgumentParser(description="S / Self-becoming SQLite maintenance utility")
     parser.add_argument("--db", default="data.db", help="Path to SQLite database file")
     parser.add_argument("--dry-run", action="store_true", help="Print counts only; do not DELETE")
     parser.add_argument("--stats", action="store_true", help="Print per-table row counts")

@@ -426,7 +426,7 @@ class SelfNarrative:
         
         identity_keywords = [
             '你是谁', '我是谁', '你的身份', '你的存在', '你觉得', '你认为',
-            '你怎么看', '自我', '意识', '存在', '灵魂', '本质', 'selfing',
+            '你怎么看', '自我', '意识', '存在', '灵魂', '本质', 'selfing', 'self-becoming',
             'who are you', 'who am i', 'your identity', 'consciousness', 'existence', 'sense of self',
         ]
         if any(kw in user_lower for kw in identity_keywords):

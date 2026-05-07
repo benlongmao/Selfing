@@ -39,7 +39,7 @@ if not validate_config_on_startup(config):
     logger.error("Configuration validation failed! Please check settings.yaml")
 
 app = FastAPI(
-    title="Selfing",
+    title="Self-becoming",
     description="Experimental runtime for a single long-lived agent instance (S): persona, state, memory, and rhythm APIs.",
 )
 

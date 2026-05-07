@@ -1,4 +1,4 @@
-# Module-by-module code notes (S / Selfing)
+# Module-by-module code notes (S / Self-becoming)
 
 > Snapshot date: 2026-03-10 (paths and line counts drift—verify in tree).
 

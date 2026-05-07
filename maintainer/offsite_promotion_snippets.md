@@ -2,13 +2,15 @@
 
 **Canonical repo URL (use everywhere):** https://github.com/benlongmao/Selfing
 
+**Display name:** **Self-becoming** (GitHub repo slug may stay `Selfing` until renamed).
+
 **Core message:** *functional selfhood* — a **single long-lived instance** with state (`z_self`), layered rules (including L2 from reflection), memory, and **rhythm / self-maintenance** — **not** “another chatbot with RAG”, **not** cosplay-first, **not** a claim to phenomenal consciousness.
 
-**Keywords to reuse:** Selfing, functional selfhood, long-running LLM, English-first, `benlongmao/Selfing`.
+**Keywords to reuse:** Self-becoming, functional selfhood, long-running LLM, English-first, `benlongmao/Selfing`.
 
 ## Hacker News (Show HN style)
 
-- **Title:** Lead with a **question + runnable experiment**, e.g. “Show HN: Selfing – conditions for continuity in one long-lived LLM instance (experimental)”.
+- **Title:** Lead with a **question + runnable experiment**, e.g. “Show HN: Self-becoming – conditions for continuity in one long-lived LLM instance (experimental)”.
 - **Body:** One-sentence problem → **three setup steps** (clone / `install_s_project.sh` / `.env` + `manage_services.sh start`) → **one line** on limits (experimental; no claim of phenomenal consciousness).
 - **Link:** the GitHub repo above.
 

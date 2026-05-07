@@ -5,7 +5,7 @@ SelfAgent — meta-execution loop for multi-step work.
 [2026-01-27] Inspired by clawdbot-style agent graphs, while keeping S-specific ``z_self`` coupling.
 
 Design:
-1. Agentic flow serves **selfing**, it does not replace it.
+1. Agentic flow serves **self-becoming**, it does not replace it.
 2. ``z_self`` shapes decisions (affect, motivation, energy change execution posture).
 3. Running a workflow is one way the instance **exists**, not a bolt-on feature.
 

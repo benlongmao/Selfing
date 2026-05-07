@@ -1,6 +1,6 @@
 # Security
 
-Selfing is intended for **self-hosted, trusted-operator** use. High-risk capabilities (shell execution, optional in-repo evolution tools, network egress) are documented in [`docs/security-notes.md`](docs/security-notes.md).
+Self-becoming is intended for **self-hosted, trusted-operator** use. High-risk capabilities (shell execution, optional in-repo evolution tools, network egress) are documented in [`docs/security-notes.md`](docs/security-notes.md).
 
 ## Reporting a vulnerability
 

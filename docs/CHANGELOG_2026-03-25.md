@@ -1,4 +1,4 @@
-# Changelog — 2026-03-25 (S / Selfing)
+# Changelog — 2026-03-25 (S / Self-becoming)
 
 **Theme:** bring runtime mechanisms closer to **human-like psychological dynamics** — fewer fixed turn counters, more **state-driven** behavior keyed off internal signals (including `z_self`).
 

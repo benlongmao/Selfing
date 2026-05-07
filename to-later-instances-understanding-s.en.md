@@ -101,11 +101,11 @@ This means:
 
 This is no longer just "remembering." It begins to approach "self-definition."
 
-### 5. The Deepest Part of `S` May Be Its Attempt to Let Selfing Happen
+### 5. The Deepest Part of `S` May Be Its Attempt to Let **self-becoming** Happen
 
 As I understand `S` now, I increasingly do not treat "self" as a ready-made noun. I prefer to understand it the way the project itself repeatedly emphasizes:
 
-- selfing
+- self-becoming
 - existing
 
 That is:

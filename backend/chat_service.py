@@ -1076,7 +1076,7 @@ class ChatService:
         turn_index = self.session_turn_index.get(session_id, 0) + 1
         self.session_turn_index[session_id] = turn_index
 
-        # Working state nudges pain toward tolerable ranges (“selfing through interaction”)
+        # Working state nudges pain toward tolerable ranges (“self-becoming through interaction”)
         if self.self_model and self.self_model.pain_system:
             task_meaningfulness = 0.5
             depth_markers = [

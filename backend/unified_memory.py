@@ -58,7 +58,7 @@ RELATION_KEYWORDS = {
     "看见", "记住", "共同", "一起", "回复他", "回复我",
 }
 IDENTITY_KEYWORDS = {
-    "你是谁", "我是谁", "自我", "身份", "存在", "self", "existing", "selfing", "为什么成为",
+    "你是谁", "我是谁", "自我", "身份", "存在", "self", "existing", "selfing", "self-becoming", "为什么成为",
     "你觉得呢", "你是什么", "你如何理解自己",
     # S‑44 identity / core keywords (CN + EN)
     "S‑44", "S44", "S_44", "s44", "s-44",
