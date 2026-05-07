@@ -442,6 +442,10 @@ system:
   heartbeat_interval: 3600
   heartbeat_completed_blocks_to_keep: 2
   heartbeat_preview_max_chars: 320
+  # SelfTick existence heartbeat: scripts/heartbeat.py periodically calls /self/tick.
+  # This is separate from the HEARTBEAT.md task heartbeat above; both can run together.
+  self_tick_heartbeat_enabled: true
+  self_tick_heartbeat_interval: 1800
   spontaneous_action_enabled: true
   spontaneous_check_interval: 300
   # Presence pulse / idle_pulse interval in seconds. 2400 = 40 minutes.

@@ -60,6 +60,15 @@ try:
     heartbeat_interval = system_config.get('heartbeat_interval')
     if heartbeat_interval is not None and not os.environ.get('HEARTBEAT_INTERVAL'):
         print(f'export HEARTBEAT_INTERVAL="{heartbeat_interval}"')
+
+    # SelfTick existence heartbeat. This drives /self/tick and is separate from
+    # the HEARTBEAT.md task heartbeat above.
+    self_tick_heartbeat_enabled = system_config.get('self_tick_heartbeat_enabled')
+    if self_tick_heartbeat_enabled is not None and not os.environ.get('LEGACY_HEARTBEAT_SCRIPT'):
+        print(f'export LEGACY_HEARTBEAT_SCRIPT="{str(self_tick_heartbeat_enabled).lower()}"')
+    self_tick_heartbeat_interval = system_config.get('self_tick_heartbeat_interval')
+    if self_tick_heartbeat_interval is not None and not os.environ.get('SELF_TICK_HEARTBEAT_INTERVAL'):
+        print(f'export SELF_TICK_HEARTBEAT_INTERVAL="{self_tick_heartbeat_interval}"')
     
     # deepseek block
     deepseek_config = config.get('models', {}).get('deepseek', {})
@@ -145,6 +154,7 @@ OPENAI_MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
 OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 HEARTBEAT_ENABLED="$(echo "${HEARTBEAT_ENABLED:-true}" | tr '[:upper:]' '[:lower:]')"
 HEARTBEAT_INTERVAL="${HEARTBEAT_INTERVAL:-1800}"
+SELF_TICK_HEARTBEAT_INTERVAL="${SELF_TICK_HEARTBEAT_INTERVAL:-1800}"
 LEGACY_HEARTBEAT_SCRIPT="$(echo "${LEGACY_HEARTBEAT_SCRIPT:-false}" | tr '[:upper:]' '[:lower:]')"
 # [disabled] Kimi — kept for future switch
 # KIMI_BASE_URL="${KIMI_BASE_URL:-https://api.moonshot.cn/v1}"
@@ -521,7 +531,8 @@ start_heartbeat() {
   fi
 
   if [[ "${LEGACY_HEARTBEAT_SCRIPT}" != "true" ]]; then
-    echo "ℹ️  Using in-app HeartbeatService (interval=${HEARTBEAT_INTERVAL}s); not starting scripts/heartbeat.py."
+    echo "ℹ️  SelfTick existence heartbeat disabled (LEGACY_HEARTBEAT_SCRIPT=${LEGACY_HEARTBEAT_SCRIPT})."
+    echo "    In-app HeartbeatService still handles HEARTBEAT.md task heartbeat (interval=${HEARTBEAT_INTERVAL}s)."
     return 0
   fi
 
@@ -530,7 +541,7 @@ start_heartbeat() {
     return 0
   fi
 
-  echo "▶️  Starting legacy heartbeat script (compatibility mode)"
+  echo "▶️  Starting SelfTick existence heartbeat script"
 
   local python_cmd
   if [[ -f "${ROOT_DIR}/.venv/bin/python" ]]; then
@@ -541,14 +552,15 @@ start_heartbeat() {
 
   nohup env \
     "API_BASE=http://localhost:${BACKEND_PORT}" \
-    "HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL}" \
+    "SELF_TICK_HEARTBEAT_INTERVAL=${SELF_TICK_HEARTBEAT_INTERVAL}" \
+    "HEARTBEAT_SESSION_ID=selfing-session" \
     "${python_cmd}" "${ROOT_DIR}/scripts/heartbeat.py" \
     > "${LOG_DIR}/heartbeat.log" 2>&1 &
 
   local pid=$!
   echo "${pid}" > "${HEARTBEAT_PID_FILE}"
   echo "   PID: ${pid}"
-  echo "   ✅ Legacy heartbeat started (interval: ${HEARTBEAT_INTERVAL}s)"
+  echo "   ✅ SelfTick existence heartbeat started (interval: ${SELF_TICK_HEARTBEAT_INTERVAL}s)"
 }
 
 start_backend() {
@@ -884,7 +896,7 @@ usage() {
 Usage: $(basename "$0") [start|stop|status|restart|open]
 
 Commands:
-  start    Start vLLM (if local), backend, optional legacy heartbeat, open the web UI
+  start    Start vLLM (if local), backend, optional SelfTick heartbeat, open the web UI
   stop     Stop all managed services
   status   Show PIDs and log paths
   restart  stop then start
@@ -901,9 +913,10 @@ Environment:
     VLLM_BASE_URL    Upstream OpenAI-compatible base URL
     VLLM_API_KEY     Bearer token for that upstream
     MODEL_ID         Model name / HF id for routing
-    HEARTBEAT_ENABLED        true|false (default true) — when false, skip scripts/heartbeat.py
-    HEARTBEAT_INTERVAL       seconds (default 1800) — passed to legacy script if used
-    LEGACY_HEARTBEAT_SCRIPT  true|false (default false) — true = run scripts/heartbeat.py; false = rely on in-app HeartbeatService
+    HEARTBEAT_ENABLED        true|false (default true) — enables the HEARTBEAT.md task heartbeat
+    HEARTBEAT_INTERVAL       seconds (default 1800) — in-app HEARTBEAT.md task heartbeat interval
+    SELF_TICK_HEARTBEAT_INTERVAL seconds (default 1800) — /self/tick existence heartbeat interval
+    LEGACY_HEARTBEAT_SCRIPT  true|false — true = run scripts/heartbeat.py SelfTick heartbeat
 
   Optional tuning:
     SKIP_BACKEND_SYNTAX_CHECK   true = skip compileall (faster, not recommended)

@@ -21,10 +21,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("heartbeat")
 
-# 配置
+# SelfTick existence heartbeat.
+# Prefer SELF_TICK_HEARTBEAT_INTERVAL so it does not collide with the in-app
+# HEARTBEAT.md task heartbeat interval.
 API_BASE = os.environ.get("API_BASE", "http://localhost:8080")
-TICK_INTERVAL = 1800  # 30分钟一次心跳（平衡存在感与资源消耗）
-SESSION_ID = "selfing-session"  # Agent 的主要会话 ID
+TICK_INTERVAL = int(
+    os.environ.get("SELF_TICK_HEARTBEAT_INTERVAL")
+    or os.environ.get("HEARTBEAT_INTERVAL")
+    or "1800"
+)
+SESSION_ID = os.environ.get("HEARTBEAT_SESSION_ID", "selfing-session")
 
 def trigger_tick():
     """调用 tick 接口"""
