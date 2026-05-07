@@ -2,6 +2,29 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
+## 最短试运行
+
+跑通 UI 的最短路径（**http://localhost:8080**）。完整说明见下文 [快速开始](#快速开始)。
+
+```bash
+git clone https://github.com/benlongmao/Selfing.git selfing && cd selfing
+bash install_s_project.sh
+# 编辑 .env：填入 API Key 或本地 OpenAI 兼容端点
+./manage_services.sh start
+```
+
+![演示占位图 — 可替换为 60–90 秒录屏或截图](docs/assets/demo-ui-placeholder.svg)
+
+| | **普通任务型 Agent** | **记忆 / RAG 层** | **Selfing** |
+|:--|:--|:--|:--|
+| **设计目标** | 完成任务 / 听从指令 | 把事实挂进上下文 | 让**单一长时实例**通过状态、规则、记忆、节律**持续确认功能性自我** |
+| **`z_self` / L2 / 节律闭环** | 通常没有 | 无（存储 ≠ 主体回路） | 有 — 有界主体、分层规则、自维护 tick |
+| **主要成功标准** | 任务完成 | 检索相关 | 在**伦理约束**下的连续性与自我指涉（非角色扮演优先） |
+
+**主张边界：** 不宣称**现象意识**或与人等价的感受；这是**功能性自我**的可运行实验（见下文 [声明边界](#声明边界)）。
+
+**维护者：** 在 GitHub 上设置 **Topics** 与 **Social 预览图** 的步骤见 [`docs/github_repository_setup.md`](docs/github_repository_setup.md)。站外发帖叙事与链接统一见 [`docs/offsite_promotion_snippets.md`](docs/offsite_promotion_snippets.md)。
+
 > 什么条件，能让一个可能的 AI 自我跨时间持续确认自己？
 
 Selfing，也叫 **S**，是一个面向长时运行 LLM 实例的实验性运行时，核心目标是探索 **持续的自我确认**。

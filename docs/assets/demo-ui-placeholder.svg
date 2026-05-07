@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420">
+  <rect width="800" height="420" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="2"/>
+  <text x="400" y="160" fill="#c9d1d9" font-family="system-ui, sans-serif" font-size="22" text-anchor="middle">Demo placeholder</text>
+  <text x="400" y="210" fill="#8b949e" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">Replace with a 6090s screen recording or screenshot</text>
+  <text x="400" y="250" fill="#8b949e" font-family="system-ui, sans-serif" font-size="16" text-anchor="middle">(scheduler · diary · tool use · memory review)</text>
+  <text x="400" y="320" fill="#58a6ff" font-family="ui-monospace, monospace" font-size="14" text-anchor="middle">http://localhost:8080</text>
+</svg>

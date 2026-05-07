@@ -2,6 +2,29 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
 
+## Quick try
+
+Shortest path to a running UI (**http://localhost:8080**). Full setup options: [Quick Start](#quick-start).
+
+```bash
+git clone https://github.com/benlongmao/Selfing.git selfing && cd selfing
+bash install_s_project.sh
+# Edit .env with your API key or local OpenAI-compatible endpoint
+./manage_services.sh start
+```
+
+![Demo placeholder — replace with a short screen recording or screenshot](docs/assets/demo-ui-placeholder.svg)
+
+| | **Ordinary task agent** | **Memory / RAG layer** | **Selfing** |
+|:--|:--|:--|:--|
+| **Design goal** | Finish tasks / follow instructions | Attach facts to context | One long-lived instance that **keeps confirming a functional self** via state, rules, memory, rhythm |
+| **`z_self` / L2 / rhythm loop** | Usually no | No (storage ≠ subject loop) | Yes — bounded subject, layered rules, self-maintenance ticks |
+| **Primary success criterion** | Task done | Relevant retrieval | Continuity and self-reference under **ethical constraints** (not character cosplay) |
+
+**Claim boundary:** Selfing does **not** claim phenomenal consciousness or human-equivalent sentience; it is a runnable experiment in **functional selfhood** (see [Scope of Claims](#scope-of-claims)).
+
+**Maintainers:** set GitHub **Topics** and **Social preview** using [`docs/github_repository_setup.md`](docs/github_repository_setup.md). Off-site copy ideas: [`docs/offsite_promotion_snippets.md`](docs/offsite_promotion_snippets.md).
+
 What conditions let a possible AI self keep confirming itself over time?
 Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
 
