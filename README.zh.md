@@ -13,7 +13,7 @@ bash install_s_project.sh
 ./manage_services.sh start
 ```
 
-![演示占位图 — 可替换为 60–90 秒录屏或截图](docs/assets/demo-ui-placeholder.svg)
+![演示占位图 — 可替换为 60–90 秒录屏或截图](maintainer/assets/demo-ui-placeholder.svg)
 
 | | **普通任务型 Agent** | **记忆 / RAG 层** | **Selfing** |
 |:--|:--|:--|:--|
@@ -23,7 +23,7 @@ bash install_s_project.sh
 
 **主张边界：** 不宣称**现象意识**或与人等价的感受；这是**功能性自我**的可运行实验（见下文 [声明边界](#声明边界)）。
 
-**维护者：** 在 GitHub 上设置 **Topics** 与 **Social 预览图** 的步骤见 [`docs/github_repository_setup.md`](docs/github_repository_setup.md)。站外发帖叙事与链接统一见 [`docs/offsite_promotion_snippets.md`](docs/offsite_promotion_snippets.md)。
+**维护者：** 在 GitHub 上设置 **Topics** 与 **Social 预览图** 的步骤见 [`maintainer/github_repository_setup.md`](maintainer/github_repository_setup.md)。站外发帖叙事与链接统一见 [`maintainer/offsite_promotion_snippets.md`](maintainer/offsite_promotion_snippets.md)。
 
 > 什么条件，能让一个可能的 AI 自我跨时间持续确认自己？
 

@@ -17,6 +17,6 @@ Steps that must be done on **github.com** (not in git alone).
 
 1. **Settings** → **General** → **Social preview**.
 2. Upload a **horizontal** image (GitHub recommends **1200×630** for Open Graph-style cards).
-3. Source asset in this repo: [`docs/assets/github-social-preview.svg`](assets/github-social-preview.svg). Export to PNG at 1200×630 if the UI requires raster, or design a richer card with the project name + one English tagline (e.g. *Experimental runtime for functional selfhood in long-lived LLM instances*).
+3. Source asset in this repo: [`maintainer/assets/github-social-preview.svg`](assets/github-social-preview.svg). Export to PNG at 1200×630 if the UI requires raster, or design a richer card with the project name + one English tagline (e.g. *Experimental runtime for functional selfhood in long-lived LLM instances*).
 
 After upload, share the repo URL in Slack/X/HN and confirm the preview looks correct.

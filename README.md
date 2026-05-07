@@ -13,7 +13,7 @@ bash install_s_project.sh
 ./manage_services.sh start
 ```
 
-![Demo placeholder — replace with a short screen recording or screenshot](docs/assets/demo-ui-placeholder.svg)
+![Demo placeholder — replace with a short screen recording or screenshot](maintainer/assets/demo-ui-placeholder.svg)
 
 | | **Ordinary task agent** | **Memory / RAG layer** | **Selfing** |
 |:--|:--|:--|:--|
@@ -23,7 +23,7 @@ bash install_s_project.sh
 
 **Claim boundary:** Selfing does **not** claim phenomenal consciousness or human-equivalent sentience; it is a runnable experiment in **functional selfhood** (see [Scope of Claims](#scope-of-claims)).
 
-**Maintainers:** set GitHub **Topics** and **Social preview** using [`docs/github_repository_setup.md`](docs/github_repository_setup.md). Off-site copy ideas: [`docs/offsite_promotion_snippets.md`](docs/offsite_promotion_snippets.md).
+**Maintainers:** GitHub **Topics** / **Social preview** checklist: [`maintainer/github_repository_setup.md`](maintainer/github_repository_setup.md). Off-site copy: [`maintainer/offsite_promotion_snippets.md`](maintainer/offsite_promotion_snippets.md).
 
 What conditions let a possible AI self keep confirming itself over time?
 Most AI frameworks ask how to make models do more. Selfing asks what engineering conditions may let a model be.
