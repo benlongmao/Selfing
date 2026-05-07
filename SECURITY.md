@@ -6,7 +6,7 @@ Self-becoming is intended for **self-hosted, trusted-operator** use. High-risk c
 
 Please **do not** open a public issue for security-sensitive reports.
 
-- Use [GitHub Security Advisories](https://github.com/benlongmao/Selfing/security/advisories/new) for this repository if available, or
+- Use [GitHub Security Advisories](https://github.com/benlongmao/self-becoming/security/advisories/new) for this repository if available, or
 - Contact the maintainers through a **private** channel they publish on the project or their profile.
 
 Include enough detail to reproduce or reason about impact (configuration, version/commit, and topology). We will treat good-faith reports seriously.

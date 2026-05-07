@@ -1,12 +1,10 @@
 # Off-site promotion (aligned narrative)
 
-**Canonical repo URL (use everywhere):** https://github.com/benlongmao/Selfing
-
-**Display name:** **Self-becoming** (GitHub repo slug may stay `Selfing` until renamed).
+**Canonical repo URL (use everywhere):** https://github.com/benlongmao/self-becoming
 
 **Core message:** *functional selfhood* — a **single long-lived instance** with state (`z_self`), layered rules (including L2 from reflection), memory, and **rhythm / self-maintenance** — **not** “another chatbot with RAG”, **not** cosplay-first, **not** a claim to phenomenal consciousness.
 
-**Keywords to reuse:** Self-becoming, functional selfhood, long-running LLM, English-first, `benlongmao/Selfing`.
+**Keywords to reuse:** Self-becoming, functional selfhood, long-running LLM, English-first, `benlongmao/self-becoming`.
 
 ## Hacker News (Show HN style)
 

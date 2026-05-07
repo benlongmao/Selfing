@@ -9,5 +9,5 @@
   <rect x="48" y="48" width="1104" height="534" rx="16" fill="none" stroke="#30363d" stroke-width="2"/>
   <text x="96" y="200" fill="#f0f6fc" font-family="system-ui, Segoe UI, sans-serif" font-size="56" font-weight="700">Self-becoming</text>
   <text x="96" y="280" fill="#8b949e" font-family="system-ui, Segoe UI, sans-serif" font-size="28">Experimental runtime · functional selfhood · long-lived LLM instances</text>
-  <text x="96" y="520" fill="#58a6ff" font-family="ui-monospace, SFMono-Regular, monospace" font-size="22">github.com/benlongmao/Selfing</text>
+  <text x="96" y="520" fill="#58a6ff" font-family="ui-monospace, SFMono-Regular, monospace" font-size="22">github.com/benlongmao/self-becoming</text>
 </svg>

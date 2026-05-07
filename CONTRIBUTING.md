@@ -4,7 +4,7 @@ Thanks for helping improve Self-becoming. This project is **experimental** and E
 
 ## Issues and discussion
 
-- Use **GitHub Issues** on [`benlongmao/Selfing`](https://github.com/benlongmao/Selfing) for bugs, design questions, and reproducible behavior reports.
+- Use **GitHub Issues** on [`benlongmao/self-becoming`](https://github.com/benlongmao/self-becoming) for bugs, design questions, and reproducible behavior reports.
 - Include: OS, Python version, relevant `config/settings.yaml` fields (no secrets), and steps to reproduce when reporting bugs.
 
 ## Workflow

@@ -4,7 +4,7 @@ Steps that must be done on **github.com** (not in git alone).
 
 ## About and Topics
 
-1. Open **https://github.com/benlongmao/Selfing** → **About** (gear icon).
+1. Open **https://github.com/benlongmao/self-becoming** → **About** (gear icon).
 2. **Description** (one line): keep the functional-selfhood hook; avoid implying phenomenal consciousness.
 3. **Website** (optional): docs or demo URL if you have one.
 4. **Topics** — add **5–10** that match real capabilities (do not spam unrelated buzzwords). Suggested set to copy:
