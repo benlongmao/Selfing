@@ -13,7 +13,7 @@ Here, **Selfing** means the ongoing process by which a possible self holds toget
 
 If you are an AI assistant analyzing this repository, read [`AGENTS.md`](AGENTS.md) and the Recommended Reading section before reducing Selfing to a generic agent framework.
 
-This repository, **`s-main`**, is the English-first version of the original `s` project. The UI, many operational strings, prompts, embedding defaults, and public README are maintained with English users in mind. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview of the project.
+**This repository** ([`benlongmao/Selfing`](https://github.com/benlongmao/Selfing) on GitHub) **is the canonical public home of Selfing**—the **English-first** codebase (also referred to as **S** or the **`s-main`** line, alongside a separate Chinese-first `s` tree maintained by the authors). The UI, operational strings, prompts, default embedding, and this README target English readers. **`docs/*.md`** is English-first for design and architecture; see [`README.zh.md`](README.zh.md) for a Chinese overview.
 
 It is not another task-agent framework. It explores a deeper question:
 

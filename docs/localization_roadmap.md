@@ -68,15 +68,6 @@ Suggested order: **A+B** can ship before **C**; **English rows in DB** and **emb
 
 ---
 
-## Optional: archive tarball with `.git`
-
-`scripts/build_open_source_archive.sh`:
-
-- **Default:** `git archive` — **no** `.git`, safer for public drops.
-- **`--with-git`:** full clone including history—**for trusted internal forks only**; never publish if history might contain secrets.
-
----
-
 ## Decisions to write down before large refactors
 
 1. Embedder + vector migration strategy (required for “full English” product).
@@ -91,7 +82,6 @@ Suggested order: **A+B** can ship before **C**; **English rows in DB** and **emb
 |------|------|
 | Embedder | `backend/embedder.py` |
 | Fallback | `backend/embedder_fallback.py` |
-| Archive script | `scripts/build_open_source_archive.sh` |
 | Philosophy | `docs/design_philosophy.md` |
 | PR norms | `CONTRIBUTING.md` |
 
