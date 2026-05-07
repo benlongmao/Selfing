@@ -4,14 +4,20 @@
 
 ## Quick try
 
-Shortest path to a running UI (**http://localhost:8080**). Full setup options: [Quick Start](#quick-start).
+**Prerequisites:** Python 3.10+, and an LLM API key or a local OpenAI-compatible `/v1/chat/completions` endpoint.
 
 ```bash
 git clone https://github.com/benlongmao/Selfing.git selfing && cd selfing
 bash install_s_project.sh
-# Edit .env with your API key or local OpenAI-compatible endpoint
+# Edit .env with your API key or local endpoint URL
 ./manage_services.sh start
 ```
+
+Open **http://localhost:8080** in your browser.
+
+For installer flags, ZIP downloads, manual init, and `config/settings.yaml`, see [Quick Start](#quick-start).
+
+## At a glance
 
 ![Demo placeholder — replace with a short screen recording or screenshot](maintainer/assets/demo-ui-placeholder.svg)
 

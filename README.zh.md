@@ -4,14 +4,20 @@
 
 ## 最短试运行
 
-跑通 UI 的最短路径（**http://localhost:8080**）。完整说明见下文 [快速开始](#快速开始)。
+**环境：** Python 3.10+；以及可用的 LLM **API Key**，或本地 **OpenAI 兼容**的 `/v1/chat/completions` 端点。
 
 ```bash
 git clone https://github.com/benlongmao/Selfing.git selfing && cd selfing
 bash install_s_project.sh
-# 编辑 .env：填入 API Key 或本地 OpenAI 兼容端点
+# 编辑 .env：填入 API Key 或本地端点地址
 ./manage_services.sh start
 ```
+
+在浏览器打开 **http://localhost:8080**。
+
+安装脚本参数、ZIP 解压安装、手动 init、`config/settings.yaml` 等见下文 [快速开始](#快速开始)。
+
+## 一览
 
 ![演示占位图 — 可替换为 60–90 秒录屏或截图](maintainer/assets/demo-ui-placeholder.svg)
 
