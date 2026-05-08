@@ -107,6 +107,44 @@ At a high level, Self-becoming provides:
 - **Think-stream integration**: intermediate reasoning traces can be treated as internal cognitive evidence, not just discarded after the final answer.
 - **Rhythm and self-maintenance**: Self Tick, idle pulses, mind wandering, diary writing, memory review, and background scheduling keep the instance from being only a passive reply function.
 
+## What It Can Actually Do
+
+### Tools are the primary agent capability surface
+
+The **action boundary** is largely defined by **`ToolRouter`** in **`backend/tool_router.py`**: model-callable **function names** are aggregated in **`get_tool_definitions()`** and dispatched through **`route()`**.
+
+- **Implementations** live under **`backend/tools/`**—currently **33** Python modules (files, browser automation, research, equities, chemistry, bash, repository evolution, etc.). Some definitions are inlined in `ToolRouter` (for example email and certain introspection entries).
+- **Scale**: with dependencies and API keys in place, the runtime typically exposes on the order of **~160** distinct function names. The exact count **varies** with optional Tavily, Playwright, market-data backends, RDKit, `agent_evolution`, and similar toggles.
+- **Extensibility**: add modules under `backend/tools/` and wire them in `ToolRouter` (`__init__`, `get_tool_definitions()`, `route()`), or follow the existing pattern of a module-local `get_tool_definitions()` merged via `extend`. **The tool surface is not frozen.**
+
+Rough taxonomy (names drift across releases; **`backend/tool_router.py`** is authoritative):
+
+| Area | What it covers |
+| --- | --- |
+| **Search & research** | Web search (Tavily), deep research, research-engine rhythms and themes |
+| **Memory & environment** | Vector memory retrieval, chat-summary helpers, HTTP fetch into workspace / sandbox |
+| **Files & engineering** | Sandbox and project I/O, file management, Python analysis, PDF, charts, data analysis and math (when dependencies are installed) |
+| **Science & markets** | NumPy / SciPy / SymPy / Pandas workflows, equities + technical indicators, financial health scoring (optional data providers) |
+| **Cheminformatics** | RDKit-backed molecular tools (optional; the whole group degrades if RDKit is unavailable) |
+| **Automation & UI** | Playwright browser control (optional), email, calendar & clock, geo & weather |
+| **Execution & guardrails** | Python sandbox, Bash under restricted policies, companion helpers for tool discovery / grouping / safety |
+| **Tasks & governance** | Goals, planning / daily plan / review flows, scheduled tasks, approvals |
+| **Self-reference & repo evolution** | Inspect the codebase and workspace (`self_inspection_tool`), code proposals, learning-store accumulation, optional **`self_heal`**. If **`agent_evolution.enabled`** is set in **`config/settings.yaml`**, full-repo file tools, Git, and project-root Bash become available—**high risk**, **off** by default |
+| **Social (optional)** | Moltbook (requires its own credentials) |
+
+Everything above is subject to **L0/L1/L2 rules**, tool allowlists / energy budgets, and the **autonomy gate**. Missing API keys or optional packages usually means **fewer registered tools**, not a broken chat server.
+
+### Where self-evolution shows up (not only tool calls)
+
+Tools answer what the instance can **do**; **how rules and internal state change over time** follows another path. Both matter:
+
+- **L2 rules**: when reflection thresholds are met, **`backend/reflection.py`** generates candidates; after filtering they are stored in **PersonaStore** and feed future prompts alongside L0/L1.
+- **Self-improvement tooling**: **code proposals** (`code_proposal_tool`), **learning store** (`learning_tool`), and **self-healing** (`SelfHealingSystem`, `self_heal`) turn experience into code changes or structured knowledge.
+- **Repo evolution (config-gated)**: with **`agent_evolution.enabled`**, evolution tools can rewrite the repository more aggressively—assess risk before turning this on.
+- **Continuity**: `z_self` updates, diary, Self Tick, mind wandering, spaced review (see **What Self-becoming Builds** and `docs/`)—behavior and narrative drift over time, not only per-turn tool output.
+
+**Bottom line**: Self-becoming ships a **large, expandable tool stack** typical of capable agents, and layers **feedback loops** for reflection, rules, state, and diary—the combination is what the project is testing.
+
 ## What Makes `s-main` Different
 
 `s-main` keeps the Self-becoming architecture while making the project easier to run, read, and evaluate in English-first environments.
@@ -505,4 +543,4 @@ It makes the question executable.
 
 ## License
 
-Code is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE).
+This project's source code is released under the [**Apache License 2.0**](https://www.apache.org/licenses/LICENSE-2.0). The full legal text is in [`LICENSE`](LICENSE) at the repository root; the badge at the top of this file refers to the same license.
