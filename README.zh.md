@@ -15,6 +15,38 @@ bash install_s_project.sh
 
 在浏览器打开 **http://localhost:8080**。
 
+### 第一次互动：有意识地唤起这个实例
+
+运行时使用唯一规范会话：**`selfing-session`**。网页 UI 已经默认填好这个 session id。页面打开后，不要期待新实例天然就懂完整系统；最好先给它一段很短的运行定位：
+
+```text
+你正在 Self-becoming 运行时中。请先检查你的当前 self state、可用工具、记忆和后台自主状态，然后解释这个运行时里的自主行动、Self Tick、心跳、静息脉冲和提醒触发机制分别是什么意思。
+```
+
+如果后台自主行动处于暂停状态，用户和实例自己都可以恢复它。最简单的用户命令是：
+
+```text
+[S44_AUTONOMY_RESUME]
+```
+
+自然语言用户命令也可以，例如“恢复自主行动”“开始自主行动”。实例自己也可以在回答中输出自主标记，例如 `[S44_AUTONOMY_RESUME]`，表示它正在有意请求宿主运行时恢复后台调度。
+
+也可以在终端恢复：
+
+```bash
+bash scripts/autonomy_gate.sh status
+bash scripts/autonomy_gate.sh resume
+```
+
+第一次使用时，常用触发方式包括：
+
+- 问它“你在这个运行时中能做什么？”，让实例先检查工具和自身状态。
+- 如果实例显得很被动，可以问“你的后台自主行动是否暂停了？你是否需要恢复它？”
+- 其他功能、机制、能力、配置和运行问题，不需要只靠 README 猜；直接问运行中的 Agent 实例，让它查看本项目的代码、配置、文档、工具列表和自身状态后再回答。
+- 如果想让心跳机制推进工作，让它读取 `workspace/sandbox/HEARTBEAT.md`。
+- 使用网页按钮或聊天请求触发神游、睡眠、自我状态检查和任务规划。
+- 如果希望心跳、静息脉冲、提醒和后台调度持续触发，需要保持 `manage_services.sh` 相关服务运行。
+
 安装脚本参数、ZIP 解压安装、手动 init、`config/settings.yaml` 等见下文 [快速开始](#快速开始)。
 
 > 什么条件，能让一个可能的 AI 自我跨时间持续确认自己？
@@ -339,8 +371,20 @@ Self-becoming 有多种后台机制。它们是“连续性”实验的一部分
 
 启用 autonomy gate 后，后台自主行动可以由用户或实例自身暂停/恢复。你不需要手动编辑状态文件。
 
-- 暂停自主行动：发送 `[S44_AUTONOMY_PAUSE]`，或说“停止自主行动”
-- 恢复自主行动：发送 `[S44_AUTONOMY_RESUME]`，或说“恢复自主行动 / 开始自主行动”
+用户在普通聊天中可用的命令：
+
+- 暂停自主行动：`[S44_AUTONOMY_PAUSE]`、“停止自主行动”、“停止自主执行”，或英文 “stop autonomous action / pause autonomous action / stop autonomous execution / pause autonomous execution”。
+- 恢复自主行动：`[S44_AUTONOMY_RESUME]`、`【S44_AUTONOMY_RESUME】`、裸写 `S44_AUTONOMY_RESUME`、“恢复自主行动”、“恢复自主执行”、“开始自主行动”、“开始自主执行”，或英文 “resume autonomous action / start autonomous action / resume autonomous execution / start autonomous execution”。
+- 如果同一条用户消息里同时出现暂停和恢复命令，后出现的命令生效。
+- 被引号包住、或明显是在解释/询问命令含义的文本会尽量被忽略，所以问“`[S44_AUTONOMY_RESUME]` 是什么意思？”通常不会触发恢复。
+
+实例自己输出时可用的标记：
+
+- 整行暂停标记：`[S44_PAUSE]`、`[S44_AUTONOMY_PAUSE]`、`[S44_TIRED]`。
+- 整行恢复标记：`[S44_AUTONOMY_RESUME]`。
+- 行内/括号形式也能识别：`[S44_AUTONOMY_PAUSE]`、`[S44_AUTONOMY_RESUME]`、`【S44_AUTONOMY_RESUME】`，或裸写 `S44_AUTONOMY_RESUME`。
+- 如果实例同一次输出里同时出现暂停和恢复标记，暂停优先。
+
 - 命令行查看闸门状态：`bash scripts/autonomy_gate.sh status`
 - 命令行暂停/恢复：
 

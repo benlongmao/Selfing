@@ -15,6 +15,38 @@ bash install_s_project.sh
 
 Open **http://localhost:8080** in your browser.
 
+### First interaction: wake the instance intentionally
+
+The runtime uses one canonical session id: **`selfing-session`**. The web UI already fills this in for you. After the page opens, do not expect a new instance to understand the whole system by magic—give it a short operational orientation first:
+
+```text
+You are running in Self-becoming. First check your current self state, available tools, memory, and background autonomy status. Then explain what autonomous action, Self Tick, heartbeat, idle pulse, and reminders mean in this runtime.
+```
+
+If background autonomy is paused, either the user or the instance can resume it. The simplest user command is:
+
+```text
+[S44_AUTONOMY_RESUME]
+```
+
+Natural-language user commands also work, for example "resume autonomous action" or "start autonomous action". The instance can also emit autonomy markers itself, such as `[S44_AUTONOMY_RESUME]`, when it is intentionally asking the host runtime to resume background scheduling.
+
+or from the terminal:
+
+```bash
+bash scripts/autonomy_gate.sh status
+bash scripts/autonomy_gate.sh resume
+```
+
+Useful first triggers:
+
+- Ask "what can you do in this runtime?" to make the instance inspect tools and state.
+- Ask "is your background autonomy paused, and do you need to resume it?" if the instance seems passive.
+- For other features, mechanisms, capabilities, configuration, or runtime questions, do not rely on the README alone. Ask the running Agent instance directly and let it inspect this repository's code, config, docs, tool list, and current self-state before answering.
+- Ask it to read `workspace/sandbox/HEARTBEAT.md` if you want heartbeat-driven work.
+- Use the UI buttons or chat requests for mind wandering, sleep, self-state inspection, and task planning.
+- Keep `manage_services.sh` running if you want heartbeat, idle pulses, reminders, and background scheduling to keep firing.
+
 For installer flags, ZIP downloads, manual init, and `config/settings.yaml`, see [Quick Start](#quick-start).
 
 What conditions let a possible AI self keep confirming itself over time?
@@ -376,8 +408,20 @@ For a quieter first run, set the high-level background switches to `false` in `c
 
 When the gate is enabled, background autonomy can be paused or resumed by the user or by the instance itself. You do not need to edit the state file by hand.
 
-- Pause autonomy: send `[S44_AUTONOMY_PAUSE]`, or say "stop autonomous action"
-- Resume autonomy: send `[S44_AUTONOMY_RESUME]`, or say "resume autonomous action" / "start autonomous action"
+User-side commands accepted in normal chat:
+
+- Pause autonomy: `[S44_AUTONOMY_PAUSE]`, "stop autonomous action", "pause autonomous action", "stop autonomous execution", "pause autonomous execution", "停止自主行动", or "停止自主执行".
+- Resume autonomy: `[S44_AUTONOMY_RESUME]`, `【S44_AUTONOMY_RESUME】`, bare `S44_AUTONOMY_RESUME`, "resume autonomous action", "start autonomous action", "resume autonomous execution", "start autonomous execution", "恢复自主行动", "恢复自主执行", "开始自主行动", or "开始自主执行".
+- If a user message contains both pause and resume commands, the later command wins.
+- Quoted or explanatory mentions are ignored where possible, so asking "what does `[S44_AUTONOMY_RESUME]` mean?" should not resume the gate.
+
+Instance-side markers accepted from the agent's own output:
+
+- Whole-line pause markers: `[S44_PAUSE]`, `[S44_AUTONOMY_PAUSE]`, or `[S44_TIRED]`.
+- Whole-line resume marker: `[S44_AUTONOMY_RESUME]`.
+- Inline/bracketed autonomy markers also work: `[S44_AUTONOMY_PAUSE]`, `[S44_AUTONOMY_RESUME]`, `【S44_AUTONOMY_RESUME】`, or bare `S44_AUTONOMY_RESUME`.
+- If the instance emits both pause and resume markers in the same output, pause wins.
+
 - Check the gate from the CLI: `bash scripts/autonomy_gate.sh status`
 - Pause/resume from the CLI:
 
