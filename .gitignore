@@ -83,7 +83,9 @@ s-open-source-export/
 # Runtime / local scratch
 endogenous_state.json
 .last_workspace_cleanup
-run/
+run/*
+!run/
+!run/autonomy_gate.json
 backups/
 *.pid
 pip_install.log
