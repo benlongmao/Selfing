@@ -143,6 +143,26 @@ def _provider_model_config_path(provider: str) -> str:
     return "models.vllm.model_id"
 
 
+def _is_openai_compat_thinking_model(model_id: str) -> bool:
+    """
+    Detect thinking-style model ids on OpenAI-compatible gateways.
+
+    These models often stream reasoning separately and may reject sampling knobs.
+    """
+    mid = str(model_id or "").lower().strip()
+    if not mid:
+        return False
+    if ":thinking" in mid or mid.endswith("/thinking") or mid.endswith("-thinking"):
+        return True
+    if "-xhigh" in mid:
+        return True
+    import re
+
+    if re.match(r"^(openai/)?(o[34]\b|o[34]-)", mid):
+        return True
+    return False
+
+
 def get_model_id(provider: Optional[str] = None) -> str:
     """
     Resolve the active model id for ``provider``:
@@ -3859,12 +3879,17 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
         *,
         stream_log_tag: str = "DEEPSEEK-STREAM",
         stream_error_label: str = "DeepSeek 流式请求",
+        wall_timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
         OpenAI 兼容 /chat/completions：使用 SSE 流式读取并聚合为整包结构。
         - DeepSeek：避免长 JSON 整包下载触发 urllib3「Response ended prematurely」。
         - Aiberm 等网关：非流式常返回 content=null（正文只在 SSE delta 里），必须走流式。
         返回与非流式一致的结构：{"choices":[{"message":{...}}],"usage":{...}}
+
+        Dual timeout model:
+        - timeout_arg=(connect, read), where read is max inactivity between socket reads.
+        - wall_timeout caps total stream duration even if keepalive bytes keep read timeout alive.
         """
         url = f"{VLLM_BASE_URL}/chat/completions"
         stream_payload = dict(payload)
@@ -3873,6 +3898,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
         retry_types: Tuple[type, ...] = (
             requests.exceptions.ChunkedEncodingError,
             requests.exceptions.ConnectionError,
+            requests.exceptions.ReadTimeout,
             _jde,
         )
         try:
@@ -3887,6 +3913,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
             reasoning_parts: List[str] = []
             tool_calls_acc: Dict[int, Dict[str, Any]] = {}
             usage: Dict[str, int] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            wall_start = time.monotonic()
             try:
                 with requests.post(
                     url,
@@ -3895,10 +3922,28 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                     timeout=timeout_arg,
                     stream=True,
                 ) as resp:
+                    if resp.status_code >= 400:
+                        _ = resp.content
                     resp.raise_for_status()
                     # SSE bodies are usually UTF-8; without charset requests may decode as latin-1 → mojibake
                     resp.encoding = "utf-8"
                     for line in resp.iter_lines(decode_unicode=True):
+                        if (
+                            wall_timeout is not None
+                            and (time.monotonic() - wall_start) > float(wall_timeout)
+                        ):
+                            logger.warning(
+                                "[%s] wall_timeout %.0fs exceeded, closing stream",
+                                stream_log_tag,
+                                float(wall_timeout),
+                            )
+                            try:
+                                resp.close()
+                            except Exception:
+                                pass
+                            raise requests.exceptions.ReadTimeout(
+                                f"{stream_log_tag} wall_timeout {wall_timeout:.0f}s reached, abort"
+                            )
                         if not line:
                             continue
                         line = line.strip()
@@ -4024,6 +4069,23 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                     ex,
                 )
                 time.sleep(wait_s)
+            except requests.exceptions.HTTPError as http_ex:
+                sc = getattr(getattr(http_ex, "response", None), "status_code", 0) or 0
+                if sc >= 500 and attempt + 1 < max_retries:
+                    last_ex = http_ex
+                    wait_s = min(10.0, 2.0 * (attempt + 1))
+                    logger.warning(
+                        "[%s] HTTP %s, %.1fs retry (%s/%s): %s",
+                        stream_log_tag,
+                        sc,
+                        wait_s,
+                        attempt + 1,
+                        max_retries,
+                        http_ex,
+                    )
+                    time.sleep(wait_s)
+                else:
+                    raise
 
         detail = str(last_ex)[:180] if last_ex else "unknown"
         raise RuntimeError(
@@ -4083,7 +4145,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
         if anthropic_vllm_compat and compat_shim_enabled:
             messages = anthropic_vllm_openai_message_shim(messages)
         
-        # Detect “thinking” providers (DeepSeek / Claude extended thinking)
+        # Detect thinking providers (DeepSeek / Claude extended / OpenAI-compatible thinking)
         if MODEL_PROVIDER == "deepseek_api":
             is_thinking_mode = (
                 "reasoner" in str(model_id).lower() or
@@ -4092,7 +4154,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
         elif MODEL_PROVIDER == "claude_api":
             is_thinking_mode = bool(config.get("models.claude.thinking_enabled", False))
         else:
-            is_thinking_mode = False
+            is_thinking_mode = _is_openai_compat_thinking_model(model_id)
         
         # Assemble HTTP JSON payload
         if is_thinking_mode and MODEL_PROVIDER == "deepseek_api":
@@ -4143,10 +4205,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                 "messages": messages_to_send,
                 "max_tokens": api_max_tokens,
             }
-            thinking_model = (
-                ":thinking" in mid_l
-                or mid_l.endswith("/thinking")
-            )
+            thinking_model = _is_openai_compat_thinking_model(model_id)
             anthropic_route = mid_l.startswith("anthropic/")
             omit_sampling = (
                 (
@@ -4252,7 +4311,14 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                     return (str(re_err), {}, None, usage)
             else:
                 openai_compat_cfg = "models.openai" if MODEL_PROVIDER == "openai_api" else "models.vllm"
-                timeout_val = int(config.get(f"{openai_compat_cfg}.timeout", 900) or 900)
+                req_headers["Accept-Encoding"] = "identity"
+                req_headers["Connection"] = "close"
+                wall_to_v = int(config.get(f"{openai_compat_cfg}.timeout", 600) or 600)
+                inactivity_to_v = int(
+                    config.get(f"{openai_compat_cfg}.sse_inactivity_timeout", 90) or 90
+                )
+                conn_to_v = int(config.get(f"{openai_compat_cfg}.connect_timeout", 45) or 45)
+                timeout_val: Any = (conn_to_v, inactivity_to_v)
                 max_retries_v = max(
                     1, int(config.get(f"{openai_compat_cfg}.completion_retries", 3) or 3)
                 )
@@ -4270,6 +4336,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                             max_retries_v,
                             stream_log_tag="VLLM-STREAM",
                             stream_error_label="vLLM/OpenAI 兼容流式请求",
+                            wall_timeout=wall_to_v,
                         )
                         # Some gateways return HTTP 200 with empty message; fall back to non-stream once
                         if bool(config.get("models.vllm.stream_empty_fallback_non_stream", True)):
@@ -4297,7 +4364,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                                     data = self._deepseek_non_stream_completion_request(
                                         payload,
                                         req_headers,
-                                        timeout_val,
+                                        (conn_to_v, wall_to_v),
                                         max_retries_v,
                                     )
                             except Exception as empty_chk_err:
@@ -4305,7 +4372,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                                     "[VLLM] stream empty-check skipped: %s",
                                     empty_chk_err,
                                 )
-                    except RuntimeError as stream_err:
+                    except (RuntimeError, requests.exceptions.HTTPError) as stream_err:
                         if stream_fallback_json:
                             logger.warning(
                                 "[VLLM] 流式 SSE 失败，回退非流式 JSON: %s",
@@ -4318,7 +4385,7 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
                         f"{VLLM_BASE_URL}/chat/completions",
                         headers=req_headers,
                         json=payload,
-                        timeout=timeout_val,
+                        timeout=(conn_to_v, wall_to_v),
                     )
                     response.raise_for_status()
                     data = response.json()
@@ -4446,7 +4513,23 @@ For DB/file/shell actions: use **tool_calls** — do not fake tools with bracket
             elif status_code == 401 or status_code == 403:
                 return "API 认证失败，请检查 API Key 配置。", {}, None, usage
             elif status_code and status_code >= 500:
-                return f"API 服务器错误 ({status_code})，请稍后重试。", {}, None, usage
+                body = (error_detail or "").strip()
+                if body:
+                    return (
+                        f"API 网关返回服务器错误（HTTP {status_code}）。网关响应摘录：\n{body[:800]}\n"
+                        f"说明：502/503 多见于短时过载、排队或维护；也可能是路由/密钥/请求体等问题被网关表现为 5xx。"
+                        f"请以正文为准，并核对 .env（VLLM_BASE_URL、VLLM_API_KEY、MODEL_ID）与聚合商控制台；可稍后重试，不必急于更换模型。",
+                        {},
+                        None,
+                        usage,
+                    )
+                return (
+                    f"API 网关返回服务器错误（HTTP {status_code}），响应体为空；502/503 不等于模型不可用。"
+                    f"请查看本机后端日志中的完整网关响应，并核对 VLLM_BASE_URL / 密钥 / MODEL_ID 与聚合商状态后再试。",
+                    {},
+                    None,
+                    usage,
+                )
             
             return f"API 调用失败 ({status_code}): {error_detail[:100]}", {}, None, usage
         except requests.exceptions.Timeout as e:

@@ -184,6 +184,8 @@ class Config:
         for env_key, config_path in self.ENV_MAPPING.items():
             env_val = os.environ.get(env_key)
             if env_val is not None:
+                if isinstance(env_val, str) and env_val.strip() == "":
+                    continue
                 # Best-effort cast for bool / int / float / str
                 val = self._auto_cast(env_val)
                 self._set_by_path(config_path, val)

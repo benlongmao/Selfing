@@ -60,7 +60,11 @@ models:
   openai:
     base_url: https://api.openai.com/v1
     model_id: gpt-4o-mini
-    timeout: 1200
+    # Dual timeout model used by chat_service:
+    # timeout = wall-clock cap; sse_inactivity_timeout = max silence between SSE bytes.
+    timeout: 600
+    sse_inactivity_timeout: 90
+    connect_timeout: 45
     max_tokens: 8192
     omit_openai_penalties: false
     omit_sampling_for_thinking_models: false
@@ -82,13 +86,22 @@ models:
     # Thinking models such as anthropic/...:thinking require SSE fields like reasoning_content / reasoning
     # for the frontend subconscious-flow display. If the gateway hides them, enable reasoning streaming
     # on the aggregator side or switch to a compatible format; see chat_service streaming parsing.
-    # Completion max_tokens is kept near DeepSeek thinking-mode scale to avoid early truncation of
-    # long reasoning chains and multi-turn tool calls after physiological scaling.
+    # Completion max_tokens: keep enough room for multi-turn tool output while avoiding very long
+    # silent reasoning windows on gateway-hosted thinking models.
     # Without this key, only energy/viscosity-scaled max_tokens are used. VLLM_MAX_TOKENS can override.
-    max_tokens: 16384
-    timeout: 1200
+    max_tokens: 8192
+    # Dual timeout model for OpenAI-compatible streaming:
+    # - timeout: wall-clock cap for a single request
+    # - sse_inactivity_timeout: max time between SSE bytes / socket reads
+    # - connect_timeout: TCP connect timeout
+    #
+    # For non-thinking openai/gpt-5.4 this is mostly a defensive cap. If you switch back to
+    # -xhigh / :thinking models, raise sse_inactivity_timeout to avoid killing normal long reasoning.
+    timeout: 240
+    sse_inactivity_timeout: 60
+    connect_timeout: 45
     omit_openai_penalties: true   # Some gateways reject presence_penalty / frequency_penalty.
-    # Some :thinking models reject temperature/top_p; when true and model_id contains :thinking, omit sampling params.
+    # Thinking models (:thinking / -xhigh / OpenAI o3/o4) may reject or mishandle temperature/top_p.
     omit_sampling_for_thinking_models: true
     # Anthropic-prefixed models via Aiberm can also be sensitive to temperature/top_p.
     omit_sampling_for_anthropic_vllm: true
@@ -102,7 +115,7 @@ models:
     stream_fallback_non_stream: true
     # If streaming returns HTTP 200 but an empty message, fall back once to non-streaming.
     stream_empty_fallback_non_stream: true
-    completion_retries: 3
+    completion_retries: 2
     # Local vLLM example; replace the lines above when switching:
     # base_url: http://localhost:8000/v1
     # model_id: your-local-model
