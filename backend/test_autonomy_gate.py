@@ -16,10 +16,10 @@ class TestAssistantAutonomyMarkers(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=lambda k, d=None: True if "agent_markers" in k else d):
                 r = autonomy_gate.apply_assistant_autonomy_markers(
-                    "好的。\n\n[S44_PAUSE]\n", "demo-session"
+                    "好的。\n\n[S44_PAUSE]\n", "selfing-session"
                 )
                 self.assertEqual(r, "paused")
-                m_set.assert_called_once_with(True, "demo-session")
+                m_set.assert_called_once_with(True, "selfing-session")
 
     def test_prose_mention_pause_not_trigger(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=True), patch.object(
@@ -27,7 +27,7 @@ class TestAssistantAutonomyMarkers(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=lambda k, d=None: True if "agent_markers" in k else d):
                 r = autonomy_gate.apply_assistant_autonomy_markers(
-                    "不要误用 [S44_PAUSE] 在句中。", "demo-session"
+                    "不要误用 [S44_PAUSE] 在句中。", "selfing-session"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -39,10 +39,10 @@ class TestAssistantAutonomyMarkers(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=lambda k, d=None: True if "agent_markers" in k else d):
                 r = autonomy_gate.apply_assistant_autonomy_markers(
-                    "好的，现在执行 `[S44_AUTONOMY_RESUME]` 以恢复推送。", "demo-session"
+                    "好的，现在执行 `[S44_AUTONOMY_RESUME]` 以恢复推送。", "selfing-session"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_pause_wins_over_resume_same_message(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=True), patch.object(
@@ -50,10 +50,10 @@ class TestAssistantAutonomyMarkers(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=lambda k, d=None: True if "agent_markers" in k else d):
                 r = autonomy_gate.apply_assistant_autonomy_markers(
-                    "[S44_AUTONOMY_RESUME]\n[S44_PAUSE]\n", "demo-session"
+                    "[S44_AUTONOMY_RESUME]\n[S44_PAUSE]\n", "selfing-session"
                 )
                 self.assertEqual(r, "paused")
-                m_set.assert_called_once_with(True, "demo-session")
+                m_set.assert_called_once_with(True, "selfing-session")
 
 
 class TestUserAutonomyCommands(unittest.TestCase):
@@ -70,7 +70,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "你不要停止自主行动，我们继续聊。"
+                    "selfing-session", "你不要停止自主行动，我们继续聊。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -81,7 +81,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "别恢复自主执行，先停着。"
+                    "selfing-session", "别恢复自主执行，先停着。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -92,7 +92,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "我说的是‘停止自主行动’这几个字，不是现在执行。"
+                    "selfing-session", "我说的是‘停止自主行动’这几个字，不是现在执行。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -103,7 +103,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "我刚才说的是‘恢复自主行动’这几个字，不是现在执行。"
+                    "selfing-session", "我刚才说的是‘恢复自主行动’这几个字，不是现在执行。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -114,7 +114,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "请解释 [S44_AUTONOMY_RESUME] 的作用。"
+                    "selfing-session", "请解释 [S44_AUTONOMY_RESUME] 的作用。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -125,10 +125,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "好的，现在请执行 [S44_AUTONOMY_RESUME]。"
+                    "selfing-session", "好的，现在请执行 [S44_AUTONOMY_RESUME]。"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_user_start_autonomy_synonym_resumes(self):
         """The Chinese start-autonomy phrase is equivalent to resume."""
@@ -137,10 +137,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "开始自主行动"
+                    "selfing-session", "开始自主行动"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_user_plain_s44_autonomy_resume_triggers(self):
         """A bare S44_AUTONOMY_RESUME token resumes autonomy."""
@@ -149,10 +149,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "好了，S44_AUTONOMY_RESUME，继续。"
+                    "selfing-session", "好了，S44_AUTONOMY_RESUME，继续。"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_user_cn_bracket_autonomy_resume_triggers(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=True), patch.object(
@@ -160,10 +160,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "【S44_AUTONOMY_RESUME】"
+                    "selfing-session", "【S44_AUTONOMY_RESUME】"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_user_negated_start_autonomy_not_trigger(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=True), patch.object(
@@ -171,7 +171,7 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "不要开始自主行动，先停着。"
+                    "selfing-session", "不要开始自主行动，先停着。"
                 )
                 self.assertIsNone(r)
                 m_set.assert_not_called()
@@ -182,10 +182,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "停止自主行动。恢复自主行动。"
+                    "selfing-session", "停止自主行动。恢复自主行动。"
                 )
                 self.assertEqual(r, "resumed")
-                m_set.assert_called_once_with(False, "demo-session")
+                m_set.assert_called_once_with(False, "selfing-session")
 
     def test_user_resume_then_pause_last_wins(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=True), patch.object(
@@ -193,10 +193,10 @@ class TestUserAutonomyCommands(unittest.TestCase):
         ) as m_set:
             with patch.object(autonomy_gate.config, "get", side_effect=self._cfg_user_on):
                 r = autonomy_gate.apply_user_autonomy_command_from_text(
-                    "demo-session", "恢复自主行动。停止自主行动。"
+                    "selfing-session", "恢复自主行动。停止自主行动。"
                 )
                 self.assertEqual(r, "paused")
-                m_set.assert_called_once_with(True, "demo-session")
+                m_set.assert_called_once_with(True, "selfing-session")
 
 
 class TestAutonomyPauseStateFile(unittest.TestCase):
@@ -236,7 +236,7 @@ class TestAutonomyPauseStateFile(unittest.TestCase):
                 autonomy_gate, "gate_enabled", return_value=True
             ):
                 self.assertTrue(
-                    autonomy_gate.is_autonomous_execution_paused("demo-session")
+                    autonomy_gate.is_autonomous_execution_paused("selfing-session")
                 )
         finally:
             try:
@@ -247,7 +247,7 @@ class TestAutonomyPauseStateFile(unittest.TestCase):
     def test_not_paused_when_gate_disabled(self):
         with patch.object(autonomy_gate, "gate_enabled", return_value=False):
             self.assertFalse(
-                autonomy_gate.is_autonomous_execution_paused("demo-session")
+                autonomy_gate.is_autonomous_execution_paused("selfing-session")
             )
 
     def test_string_false_paused_not_treated_as_true(self):
@@ -264,7 +264,7 @@ class TestAutonomyPauseStateFile(unittest.TestCase):
                 autonomy_gate, "gate_enabled", return_value=True
             ):
                 self.assertFalse(
-                    autonomy_gate.is_autonomous_execution_paused("demo-session")
+                    autonomy_gate.is_autonomous_execution_paused("selfing-session")
                 )
         finally:
             try:

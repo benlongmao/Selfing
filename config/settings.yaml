@@ -218,7 +218,7 @@ parameters:
       format: structured
       injection_channel: system_only
   # Calendar due-event reminders. Resting pulse calls get_due_events_for_reminder,
-  # then sends one chat(session_id) to that session's agent, e.g. s-44 on demo-session.
+  # then sends one chat(session_id) to that session's agent, e.g. s-44 on selfing-session.
   calendar:
     # Events that started but were never reminded expire after this many hours.
     # 0 disables the cap and may surface stale events; expired rows avoid long-term DB buildup.

@@ -68,8 +68,8 @@ Chronology (high level)
 
 - 2024–2025: experimental multi-session layouts.
 - 2026-01-11: unified subject semantics.
-- 2026-01-22: hard lock to a single canonical session id (``demo-session``) with database cleanup + backups.
-- 2026-04-22: canonical id renamed to ``selfing-session`` (update ``PRIMARY_SESSION_ID`` here; migrate SQLite ``session_id`` columns if upgrading an existing DB).
+- 2026-01-22: hard lock to a single canonical session id with database cleanup + backups.
+- 2026-04-22: canonical id standardized as ``selfing-session`` (update ``PRIMARY_SESSION_ID`` here; migrate SQLite ``session_id`` columns if upgrading an existing DB).
 
 Backup pointers (examples, not enforced paths):
 

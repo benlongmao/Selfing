@@ -37,7 +37,7 @@ class TestChatServiceAutonomyResumeKickoff(unittest.TestCase):
         svc = ChatService.__new__(ChatService)
         svc.db_path = ":memory:"
         svc.session_history = {
-            "demo-session": [{"role": "user", "content": "hi"}]
+            "selfing-session": [{"role": "user", "content": "hi"}]
         }
         svc.sensory_buffer = None
         svc.notification_queue = None
@@ -64,10 +64,10 @@ class TestChatServiceAutonomyResumeKickoff(unittest.TestCase):
                  "backend.existential_state.get_existential_state",
                  return_value=_FakeExistential(),
              ):
-            result = svc.chat("恢复自主行动", session_id="demo-session")
+            result = svc.chat("恢复自主行动", session_id="selfing-session")
 
-        m_gate.assert_called_once_with("demo-session", "恢复自主行动")
-        m_enqueue.assert_called_once_with(session_id="demo-session")
+        m_gate.assert_called_once_with("selfing-session", "恢复自主行动")
+        m_enqueue.assert_called_once_with(session_id="selfing-session")
         self.assertEqual(result["response"], "resting")
         self.assertEqual(result["existential_mode"], "resting")
         self.assertEqual(result["mode_reason"], "test-rest")
@@ -92,9 +92,9 @@ class TestChatServiceAutonomyResumeKickoff(unittest.TestCase):
                  "backend.existential_state.get_existential_state",
                  return_value=_FakeExistential(),
              ):
-            svc.chat("只是普通聊天", session_id="demo-session")
+            svc.chat("只是普通聊天", session_id="selfing-session")
 
-        m_gate.assert_called_once_with("demo-session", "只是普通聊天")
+        m_gate.assert_called_once_with("selfing-session", "只是普通聊天")
         m_enqueue.assert_not_called()
 
 

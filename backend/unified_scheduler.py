@@ -45,7 +45,7 @@ def init_scheduler(db_path: str) -> "UnifiedScheduler":
     return _scheduler_instance
 
 
-def enqueue_autonomy_resume_check(session_id: str = "demo-session") -> bool:
+def enqueue_autonomy_resume_check(session_id: str = "selfing-session") -> bool:
     """
     自主闸门从 paused -> resumed 后，立即补一条高优先级检查任务，
     避免必须等待下一次周期脉冲才开始执行。
@@ -107,7 +107,7 @@ class UnifiedScheduler:
         task_type: str,
         task_id: str,
         prompt: str,
-        session_id: str = "demo-session",
+        session_id: str = "selfing-session",
         metadata: Optional[Dict] = None,
         is_system_reminder: bool = True,
         temperature: float = 0.5,
@@ -388,7 +388,7 @@ class UnifiedScheduler:
     def _inject_idle_pulse(self):
         try:
             from backend.autonomy_gate import is_autonomous_execution_paused
-            if is_autonomous_execution_paused("demo-session"):
+            if is_autonomous_execution_paused("selfing-session"):
                 logger.debug("[SCHEDULER] idle_pulse skipped (autonomy pause)")
                 return
         except Exception:
@@ -407,7 +407,7 @@ class UnifiedScheduler:
             task_type="idle_pulse",
             task_id=f"idle-{int(time.time())}",
             prompt=prompt,
-            session_id="demo-session",
+            session_id="selfing-session",
             # True: same as heartbeat/calendar; ensures chat_service still reaches LLM in SOLITARY/RESTING
             is_system_reminder=True,
             temperature=0.7,
@@ -418,7 +418,7 @@ class UnifiedScheduler:
             return
         try:
             from backend.autonomy_gate import is_autonomous_execution_paused
-            if is_autonomous_execution_paused("demo-session"):
+            if is_autonomous_execution_paused("selfing-session"):
                 logger.debug("[SCHEDULER] plan/stale check skipped (autonomy pause)")
                 return
         except Exception:
@@ -429,7 +429,7 @@ class UnifiedScheduler:
             if not tool or not tool.task_executor:
                 return
 
-            plans = tool.task_executor.get_active_plans("demo-session")
+            plans = tool.task_executor.get_active_plans("selfing-session")
             if not plans:
                 return
 
@@ -473,7 +473,7 @@ class UnifiedScheduler:
                     task_type="plan_task",
                     task_id=f"plan-{task_id}",
                     prompt=prompt,
-                    session_id="demo-session",
+                    session_id="selfing-session",
                 )
                 return
             
@@ -511,7 +511,7 @@ class UnifiedScheduler:
                         task_type="stale_task_resume",
                         task_id=f"stale-{task_id}-{int(time.time())}",
                         prompt=prompt,
-                        session_id="demo-session",
+                        session_id="selfing-session",
                         # [2026-03-30] Preload task_planning group
                         metadata={"preload_tool_groups": ["task_planning"]},
                     )

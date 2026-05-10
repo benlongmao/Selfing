@@ -299,7 +299,7 @@ def _resting_pulse_loop(db_path: str):
     except Exception as e:
         logger.error("MemoryEnhancer init failed: %s", e)
 
-    default_session_id = config.get("system.default_session_id", "demo-session")
+    default_session_id = config.get("system.default_session_id", "selfing-session")
     try:
         create_daily_memory_review_task(scheduled_tasks, default_session_id)
     except Exception as e:

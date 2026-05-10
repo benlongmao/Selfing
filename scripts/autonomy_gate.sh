@@ -28,7 +28,7 @@ path = _state_path()
 state = load_state()
 print("State file:", path)
 print("gate_enabled:", gate_enabled())
-print("Background autonomy paused:", is_autonomous_execution_paused("demo-session"))
+print("Background autonomy paused:", is_autonomous_execution_paused("selfing-session"))
 print("Last updated by:", state.get("updated_by") or "-")
 print("Reason:", state.get("reason") or "-")
 print("Raw state:", json.dumps(state, ensure_ascii=False, indent=2))
@@ -42,7 +42,7 @@ import json
 set_autonomous_pause_from_cli(False, "")
 print("Resumed background autonomy (paused=false).")
 print("Current:", json.dumps(load_state(), ensure_ascii=False))
-print("Still paused?", is_autonomous_execution_paused("demo-session"))
+print("Still paused?", is_autonomous_execution_paused("selfing-session"))
 PY
     ;;
   pause|off|stop)
@@ -53,7 +53,7 @@ import json
 set_autonomous_pause_from_cli(True, "cli: scripts/autonomy_gate.sh pause")
 print("Paused background autonomy (paused=true).")
 print("Current:", json.dumps(load_state(), ensure_ascii=False))
-print("Paused?", is_autonomous_execution_paused("demo-session"))
+print("Paused?", is_autonomous_execution_paused("selfing-session"))
 PY
     ;;
   *)

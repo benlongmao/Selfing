@@ -681,7 +681,7 @@ class MindWandering:
             "type": "existential"
         }
 
-    def _build_wandering_prompt(self, theme: Dict, session_id: str = "demo-session") -> str:
+    def _build_wandering_prompt(self, theme: Dict, session_id: str = "selfing-session") -> str:
         """构建神游的 System Prompt"""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 

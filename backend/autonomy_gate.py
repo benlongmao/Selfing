@@ -202,7 +202,7 @@ def set_autonomous_pause_from_cli(paused: bool, reason: str = "") -> bool:
     )
 
 
-def is_autonomous_execution_paused(session_id: str = "demo-session") -> bool:
+def is_autonomous_execution_paused(session_id: str = "selfing-session") -> bool:
     if not gate_enabled():
         return False
     data = load_state()

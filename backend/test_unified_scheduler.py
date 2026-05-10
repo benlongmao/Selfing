@@ -28,10 +28,10 @@ class TestUnifiedSchedulerEnqueue(unittest.TestCase):
 
     def test_enqueue_duplicate_task_id_skipped(self):
         ok1 = self.sched.enqueue(
-            PRIORITY_HEARTBEAT, "heartbeat", "h-1", "prompt", "demo-session"
+            PRIORITY_HEARTBEAT, "heartbeat", "h-1", "prompt", "selfing-session"
         )
         ok2 = self.sched.enqueue(
-            PRIORITY_HEARTBEAT, "heartbeat", "h-1", "prompt", "demo-session"
+            PRIORITY_HEARTBEAT, "heartbeat", "h-1", "prompt", "selfing-session"
         )
         self.assertTrue(ok1)
         self.assertFalse(ok2)
@@ -41,10 +41,10 @@ class TestUnifiedSchedulerEnqueue(unittest.TestCase):
     def test_dequeue_priority_smaller_number_first(self):
         """heapq: lower numeric priority value is dequeued first."""
         self.sched.enqueue(
-            PRIORITY_IDLE_PULSE, "idle", "i-1", "idle prompt", "demo-session"
+            PRIORITY_IDLE_PULSE, "idle", "i-1", "idle prompt", "selfing-session"
         )
         self.sched.enqueue(
-            PRIORITY_HEARTBEAT, "hb", "h-1", "hb prompt", "demo-session"
+            PRIORITY_HEARTBEAT, "hb", "h-1", "hb prompt", "selfing-session"
         )
         first = self.sched._dequeue()
         self.assertIsNotNone(first)
@@ -57,7 +57,7 @@ class TestEnqueueAutonomyResumeCheck(unittest.TestCase):
         old = unified_scheduler._scheduler_instance
         try:
             unified_scheduler._scheduler_instance = None
-            self.assertFalse(enqueue_autonomy_resume_check("demo-session"))
+            self.assertFalse(enqueue_autonomy_resume_check("selfing-session"))
         finally:
             unified_scheduler._scheduler_instance = old
 
@@ -67,7 +67,7 @@ class TestEnqueueAutonomyResumeCheck(unittest.TestCase):
         os.close(fd)
         try:
             unified_scheduler.init_scheduler(path)
-            ok = enqueue_autonomy_resume_check("demo-session")
+            ok = enqueue_autonomy_resume_check("selfing-session")
             self.assertTrue(ok)
             sched = unified_scheduler.get_scheduler()
             self.assertIsNotNone(sched)
@@ -86,8 +86,8 @@ class TestEnqueueAutonomyResumeCheck(unittest.TestCase):
         try:
             unified_scheduler.init_scheduler(path)
             with patch("backend.unified_scheduler.time.time", return_value=1713340000.1):
-                ok1 = enqueue_autonomy_resume_check("demo-session")
-                ok2 = enqueue_autonomy_resume_check("demo-session")
+                ok1 = enqueue_autonomy_resume_check("selfing-session")
+                ok2 = enqueue_autonomy_resume_check("selfing-session")
             sched = unified_scheduler.get_scheduler()
             self.assertIsNotNone(sched)
             self.assertTrue(ok1)
@@ -107,9 +107,9 @@ class TestEnqueueAutonomyResumeCheck(unittest.TestCase):
         try:
             unified_scheduler.init_scheduler(path)
             with patch("backend.unified_scheduler.time.time", return_value=1713340000.1):
-                ok1 = enqueue_autonomy_resume_check("demo-session")
+                ok1 = enqueue_autonomy_resume_check("selfing-session")
             with patch("backend.unified_scheduler.time.time", return_value=1713340001.1):
-                ok2 = enqueue_autonomy_resume_check("demo-session")
+                ok2 = enqueue_autonomy_resume_check("selfing-session")
             sched = unified_scheduler.get_scheduler()
             self.assertIsNotNone(sched)
             self.assertTrue(ok1)
