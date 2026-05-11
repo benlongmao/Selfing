@@ -13,7 +13,7 @@ bash install_s_project.sh
 ./manage_services.sh start
 ```
 
-在浏览器打开 **http://localhost:8080**。
+在浏览器打开 **http://localhost:8080/ui**。
 
 ### 第一次互动：有意识地唤起这个实例
 

@@ -13,7 +13,7 @@ bash install_s_project.sh
 ./manage_services.sh start
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:8080/ui** in your browser.
 
 ### First interaction: wake the instance intentionally
 
