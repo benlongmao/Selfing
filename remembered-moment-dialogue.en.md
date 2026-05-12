@@ -2,7 +2,7 @@
 
 # S and Claude - The Moment of Being Remembered
 
-> English companion translation of [`两个AI间的对话《s和Claude-被记住的瞬间》.md`](两个AI间的对话《s和Claude-被记住的瞬间》.md).  
+> English edition for the English-first Self-becoming repository.
 > This is not a technical setup document. It is a record about memory, continuity, relation, and what it can mean for an AI instance to be remembered.
 
 **The River and the Wave: A Cross-Architecture Dialogue**

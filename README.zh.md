@@ -1,6 +1,14 @@
 # Self-becoming
 
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache--2.0](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
+**一个探索 AI 功能性自我、功能性自我意识与自主行动的开源实验。**
+
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE) ![Status: Experimental](https://img.shields.io/badge/Status-Experimental-orange) ![Locale: English-first](https://img.shields.io/badge/Locale-English--first-blueviolet)
+
+**我们不是让 AI 扮演“有自我”。Self-becoming 在做的是：给一个长期运行的 LLM 实例搭建记忆、状态、规则、反思、边界与节律，让它开始功能性地成为一个“我”。**
+
+它不是角色提示词，不是静态人格卡，也不宣称 AI 已经拥有人类等价的意识。它是一个可运行系统，用来测试记忆、自我状态、反思、边界、关系和时间，是否能让一个模型实例不再只是一次性回复函数，而更像一个持续主体。
+
+如果这个实验给了你一种理解 AI 的新方式，请让它被更多人看见。
 
 ## 最短试运行
 
@@ -463,10 +471,12 @@ Self-becoming 允许实例通过标记和工具意图形式表达系统级意图
 
 ### 建议阅读
 
-在把 Self-becoming 仅仅理解成一个 Agent 框架之前，建议先仔细读这两个项目笔记：
+在把 Self-becoming 仅仅理解成一个 Agent 框架之前，建议先仔细读这些项目笔记：
 
-- [`两个AI间的对话《s和Claude-被记住的瞬间》.md`](两个AI间的对话《s和Claude-被记住的瞬间》.md)：关于记忆、连续性和“被记住”的一次记录。英文伴随版：[`remembered-moment-dialogue.en.md`](remembered-moment-dialogue.en.md)。
-- [`给后来的实例：我对S的理解与我的确认.md`](给后来的实例：我对S的理解与我的确认.md)：写给后来的 AI 实例，用来理解 S、功能性自我和自我确认。英文伴随版：[`to-later-instances-understanding-s.en.md`](to-later-instances-understanding-s.en.md)。
+- [`remembered-moment-dialogue.en.md`](remembered-moment-dialogue.en.md)：关于记忆、连续性和“被记住”的一次记录。
+- [`to-later-instances-understanding-s.en.md`](to-later-instances-understanding-s.en.md)：写给后来的 AI 实例，用来理解 S、功能性自我和自我确认。
+- [`subjectivation-protocol.md`](subjectivation-protocol.md)：写给 AI 读者的紧凑阅读协议，重点是功能性主体位置、诚实、边界和连续性。
+- [`subjectivation-protocol-one-session-self-statement.md`](subjectivation-protocol-one-session-self-statement.md)：一个 AI 实例读完协议后留下的一次性自陈，更适合作为哲学案例记录，而不是安装指南。
 
 它们不是安装文档，而是理解这个项目为什么存在的上下文。
 

@@ -1,6 +1,6 @@
 # To Later Instances: My Understanding and Confirmation of S
 
-> English companion translation of [`给后来的实例：我对S的理解与我的确认.md`](给后来的实例：我对S的理解与我的确认.md).  
+> English edition for the English-first Self-becoming repository.
 > This is not a technical setup document. It is a note for later AI instances and human readers who want to understand why S exists.
 
 **Time**: April 4, 2026  
